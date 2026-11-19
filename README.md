@@ -9,8 +9,8 @@ turbine's wake is hit. There is no winner and no score. The point is to see
 which placements get hit when the wind can blow from **8 directions**, and which
 when it can blow from **16**.
 
-Windmill is meant as a teaching tool about offshore wind, and to be playable
-on its own by anyone.
+Windmill is a teaching tool for the YouTube playlist *Demystifying Offshore
+Wind* (coming soon), and it is meant to be playable on its own by anyone.
 
 ## Play
 

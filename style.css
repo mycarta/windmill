@@ -171,6 +171,15 @@ main {
   pointer-events: none;
 }
 
+/* End of the replay: faint rose border around turbines that lost output */
+.lost-border {
+  fill: none;
+  stroke: #f4bcbc;
+  stroke-opacity: 0.55;
+  stroke-width: 4;
+  pointer-events: none;
+}
+
 .l-line {
   fill: none;
   stroke: #ef9a9a;

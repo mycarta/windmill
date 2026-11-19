@@ -116,6 +116,7 @@ async function run() {
         recordLines().length === 2 && text('turn-line') === turnBefore && text('status') === statusBefore);
   check('Close: game buttons back', !$('game-buttons').hidden && !$('record').hidden);
   check('Close: lost output back to the game\'s own', lostAt(4, 6) && !lostAt(4, 4));
+  check('Close: no faint rose borders in the game', count('#hit-borders .lost-border') === 0);
 
   lines.push('-- turn 3: the wake passes, the loss stays');
   cell(0, 0);
@@ -138,8 +139,9 @@ async function run() {
   check('ENE shows one L per hit turbine (2 frames, 1 L each)', eneFrames === 2 && lCount === 2, eneFrames + ' frames, ' + lCount + ' Ls');
   check('end: 0 of 5 for 8 directions', text('summary-8') === 'Hit by at least one of the 8 directions: 0 of 5 turbines', text('summary-8'));
   check('end: 5 of 5 for 16 directions', text('summary-16') === 'Hit by at least one of the 16 directions: 5 of 5 turbines', text('summary-16'));
-  check('end: all 5 turbines lost output, no borders',
-        count('#turbines .turbine-symbol.lost') === 5 && count('#hit-borders .hit-border') === 0);
+  check('end: all 5 turbines lost output, no red borders, 5 faint rose borders',
+        count('#turbines .turbine-symbol.lost') === 5 && count('#hit-borders .hit-border') === 0
+        && count('#hit-borders .lost-border') === 5);
   click($('close-btn'));
 
   lines.push('-- end of game');

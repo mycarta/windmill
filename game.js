@@ -187,6 +187,16 @@ function drawBoard(view = {}) {
 
   const borders = $('hit-borders');
   borders.innerHTML = '';
+  // End of the replay only: a faint rose border on turbines that lost output.
+  if (view.lostBorders) {
+    for (const i of lost) {
+      const t = turbines[i];
+      borders.appendChild(svgEl('rect', {
+        class: 'lost-border fade-in',
+        x: t.x * CELL + 5, y: (BOARD_N - 1 - t.y) * CELL + 5, width: 90, height: 90, rx: 10,
+      }));
+    }
+  }
   for (const i of view.hits || []) {
     const t = turbines[i];
     borders.appendChild(svgEl('rect', {
@@ -452,7 +462,8 @@ function showFrame(i) {
   if (f.final) {
     replay.playing = false;
     clearTimeout(replay.timer);
-    drawBoard({ lost: new Set(replay.hit16) });   // no gust now: no borders, only lost output
+    // No gust now, so no red borders: lost output, with a faint rose border.
+    drawBoard({ lost: new Set(replay.hit16), lostBorders: true });
     paintCompass(dir => ({ active: false, used: true, added: !DIRECTIONS_8.includes(dir), tappable: false }));
     setTurnLine('Replay with 16 directions');
     setStatus('');

@@ -1,0 +1,3 @@
+# Private planning files: never commit or push
+DECISION_LOG_windmill_*.md
+windmill_geometry_check.py

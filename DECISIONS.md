@@ -26,6 +26,7 @@ look, not game code.
 |---|---|
 | D8 | Only the current gust is shown: its wakes as pale streaks and the turbines it hits with a soft-red cell border. All of it clears when the next turbine is placed. Earlier gusts leave no trace on the board. Overlapping wakes are drawn separately, so overlaps look brighter. |
 | D8 compass | Current gust: gold `#f5e642`. Directions not used yet: pale `#c5d9e8`. Used directions are "switched off" in the compass's own blue `#1f3c51` (options compared in [`proposal/compass-used-options.png`](proposal/compass-used-options.png)). |
+| Legend | A discreet one-line legend under the compass, small dots and muted text: "Wind now", "Still to come", "Used". In the replay, below the buttons: "Wind now", "8 directions", "Added in 16 directions", "Used" (see [`proposal/legend.png`](proposal/legend.png)). |
 | D9 | A record under the compass, one line per gust: `NE — hit: (3,4), (5,6)` or `NE — none`. |
 | D10 | Axis numbers 0–8 along the bottom (x) and up the left side (y). |
 | Text sizes | The turn line, axis numbers and "8 directions" caption are larger than in the first draft (see the mock-up). |

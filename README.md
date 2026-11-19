@@ -27,14 +27,16 @@ and tap "Add to Home Screen". It works offline after that.
 2. Tap an empty square to place a turbine.
 3. The wind blows from one direction on the compass, picked at random. Each
    direction blows once. Every turbine casts a wake (the pale streaks), and any
-   turbine inside a wake gets a red border.
+   turbine inside a wake gets a red border. The wake passes with the gust, but
+   the lost output stays: a turbine that has been hit turns rose.
 4. The game ends when every direction has blown. The record under the compass
    lists which turbines each gust hit.
 
 With 8 directions, **Replay with 16 directions** takes the turbines on the board
 and blows all 16 directions over them, one at a time, with **Pause / Play** and
 **Step**. When a gust hits a turbine, an L shows how many rows and columns it is
-from the closest upwind turbine that hits it. At the end, two counts compare the
+from the closest upwind turbine that hits it, and turbines turn rose as they
+are hit. At the end, two counts compare the
 8 original directions with all 16:
 
 > Hit by at least one of the 8 directions: X of N turbines

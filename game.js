@@ -119,9 +119,13 @@ function buildGrid() {
   svg.appendChild(axes);
 }
 
-function turbineSymbol(t, fresh) {
+// lost: the turbine has been hit at least once, so it has lost output (rose).
+function turbineSymbol(t, fresh, lost) {
   const [cx, cy] = centre(t);
-  const g = svgEl('g', { class: 'turbine-symbol' + (fresh ? ' fade-in' : ''), transform: `translate(${cx}, ${cy})` });
+  const g = svgEl('g', {
+    class: 'turbine-symbol' + (lost ? ' lost' : '') + (fresh ? ' fade-in' : ''),
+    transform: `translate(${cx}, ${cy})`, 'data-x': t.x, 'data-y': t.y,
+  });
   g.appendChild(svgEl('path', { class: 'turbine-tower', d: 'M -1.6 4 L -3.4 36 L 3.4 36 L 1.6 4 Z' }));
   const rotor = svgEl('g', { transform: `rotate(${t.rot})` });
   const blade = 'M -1.8 -4 C -5.8 -10 -5.2 -19 -1.6 -26 Q 0 -28.4 1.6 -26.6 C 3.2 -19 3.2 -10 1.8 -4 Z';
@@ -148,15 +152,21 @@ function lPoints(a, b) {
   return pts.map(p => `${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ');
 }
 
-// Draw the board. view: {gust, hits, borders, pair, freshGust, freshTurbine, freshLine}
+// Draw the board.
+// view: {gust, hits, pair, lost, freshGust, freshTurbine, freshLine}
+//   hits: turbines in the current gust's wakes (red border, "Hit now")
+//   lost: Set of turbine indices that have lost output so far (rose)
 function drawBoard(view = {}) {
-  const occupied = new Set(turbines.map(t => `${t.x}-${t.y}`));
+  const occupied = new Map(turbines.map((t, i) => [`${t.x}-${t.y}`, i]));
+  const lost = view.lost || new Set();
   for (let y = 0; y < BOARD_N; y++) {
     for (let x = 0; x < BOARD_N; x++) {
       const g = $(`cell-${x}-${y}`);
-      const has = occupied.has(`${x}-${y}`);
+      const i = occupied.get(`${x}-${y}`);
+      const has = i !== undefined;
       g.setAttribute('class', 'cell ' + (has ? 'turbine' : 'empty'));
-      g.setAttribute('aria-label', `Square ${x}, ${y}` + (has ? ': turbine' : ''));
+      g.setAttribute('aria-label', `Square ${x}, ${y}` +
+        (has ? (lost.has(i) ? ': turbine, lost output' : ': turbine') : ''));
     }
   }
 
@@ -177,7 +187,7 @@ function drawBoard(view = {}) {
 
   const borders = $('hit-borders');
   borders.innerHTML = '';
-  for (const i of view.borders || view.hits || []) {
+  for (const i of view.hits || []) {
     const t = turbines[i];
     borders.appendChild(svgEl('rect', {
       class: 'hit-border' + (view.freshGust ? ' fade-in' : ''),
@@ -197,7 +207,7 @@ function drawBoard(view = {}) {
 
   const layer = $('turbines');
   layer.innerHTML = '';
-  turbines.forEach((t, i) => layer.appendChild(turbineSymbol(t, i === view.freshTurbine)));
+  turbines.forEach((t, i) => layer.appendChild(turbineSymbol(t, i === view.freshTurbine, lost.has(i))));
 
   $('grid').classList.toggle('placing', canPlace());
 }
@@ -311,8 +321,16 @@ function updateButtons() {
   });
 }
 
+// Turbines hit at least once in this game have lost output: the wake passes,
+// the loss stays.
+function lostInGame() {
+  return new Set(turbines.map((t, i) => (t.lost ? i : -1)).filter(i => i >= 0));
+}
+
 function renderGame(view = {}) {
-  drawBoard(Object.assign({ gust: current && current.dir, hits: current ? current.hits : [] }, view));
+  drawBoard(Object.assign({
+    gust: current && current.dir, hits: current ? current.hits : [], lost: lostInGame(),
+  }, view));
   paintGameCompass();
   renderLegend([[COLOR.now, 'Wind now'], [COLOR.pale, 'Still to come'], [COLOR.used, 'Used']]);
   renderRecord();
@@ -352,6 +370,7 @@ function handleCompassClick(dir) {
 function blow(dir) {
   usedDirs.push(dir);
   const hits = hitsForGust(turbines, dir);
+  hits.forEach(i => { turbines[i].lost = true; });
   current = { dir, hits };
   record.push({
     dir,
@@ -387,12 +406,17 @@ function chooseSetting(n) {
 function openReplay() {
   if (setting !== 8 || turbines.length < 2 || inputLocked || awaitingPick || replay) return;
 
+  // The replay is its own experiment: every turbine starts with no lost
+  // output and turns rose the first time a replay gust hits it.
   const frames = [];
+  const lostSoFar = new Set();
   for (const dir of DIRECTIONS_16) {
     const hits = hitsForGust(turbines, dir);
+    hits.forEach(i => lostSoFar.add(i));
+    const lost = new Set(lostSoFar);
     const pairs = nearestHitPairs(turbines, dir);
-    if (pairs.length === 0) frames.push({ dir, hits, pair: null });
-    else pairs.forEach(pair => frames.push({ dir, hits, pair }));
+    if (pairs.length === 0) frames.push({ dir, hits, lost, pair: null });
+    else pairs.forEach(pair => frames.push({ dir, hits, lost, pair }));
   }
   frames.push({ final: true });
 
@@ -428,7 +452,7 @@ function showFrame(i) {
   if (f.final) {
     replay.playing = false;
     clearTimeout(replay.timer);
-    drawBoard({ borders: replay.hit16 });
+    drawBoard({ lost: new Set(replay.hit16) });   // no gust now: no borders, only lost output
     paintCompass(dir => ({ active: false, used: true, added: !DIRECTIONS_8.includes(dir), tappable: false }));
     setTurnLine('Replay with 16 directions');
     setStatus('');
@@ -441,7 +465,7 @@ function showFrame(i) {
   }
 
   const newGust = !prev || prev.dir !== f.dir;
-  drawBoard({ gust: f.dir, hits: f.hits, pair: f.pair, freshGust: newGust, freshLine: true });
+  drawBoard({ gust: f.dir, hits: f.hits, lost: f.lost, pair: f.pair, freshGust: newGust, freshLine: true });
   const k = DIRECTIONS_16.indexOf(f.dir);
   paintCompass(dir => {
     const added = !DIRECTIONS_8.includes(dir);

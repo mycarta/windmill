@@ -35,6 +35,21 @@
                xmlns="http://www.w3.org/2000/svg">
           </svg>
           <div id="status" aria-live="polite">Tap a square to place a turbine</div>
+          <div id="board-legend" aria-hidden="true">
+            <span class="legend-item"><span class="chip chip-hit"></span>Hit now</span>
+            <span class="legend-item">
+              <svg class="chip" viewBox="-30 -30 60 60" xmlns="http://www.w3.org/2000/svg">
+                <g class="turbine-symbol lost" transform="translate(0, -2) scale(0.78)">
+                  <path class="turbine-tower" d="M -1.6 4 L -3.4 36 L 3.4 36 L 1.6 4 Z"/>
+                  <g transform="rotate(-15)">
+                    <path class="turbine-blade" d="M -1.8 -4 C -5.8 -10 -5.2 -19 -1.6 -26 Q 0 -28.4 1.6 -26.6 C 3.2 -19 3.2 -10 1.8 -4 Z"/>
+                    <path class="turbine-blade" transform="rotate(120)" d="M -1.8 -4 C -5.8 -10 -5.2 -19 -1.6 -26 Q 0 -28.4 1.6 -26.6 C 3.2 -19 3.2 -10 1.8 -4 Z"/>
+                    <path class="turbine-blade" transform="rotate(240)" d="M -1.8 -4 C -5.8 -10 -5.2 -19 -1.6 -26 Q 0 -28.4 1.6 -26.6 C 3.2 -19 3.2 -10 1.8 -4 Z"/>
+                  </g>
+                  <circle class="turbine-hub" r="4.6"/>
+                </g>
+              </svg>Lost output</span>
+          </div>
         </div>
 
         <div id="side-col">
@@ -95,7 +110,9 @@
           <li>Tap an empty square to place a turbine.</li>
           <li>The wind blows from one direction on the compass, picked at random.
               Every turbine leaves a wake downwind, drawn as a pale streak.
-              A turbine inside another turbine's wake is hit, and its square gets a red border.</li>
+              A turbine inside another turbine's wake is hit, and its square gets a red border.
+              The wake passes with the gust, but the lost output stays: a turbine that has
+              been hit turns rose.</li>
         </ol>
 
         <p>Each direction blows once. The game ends when every direction has blown.

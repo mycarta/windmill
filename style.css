@@ -189,6 +189,9 @@ main {
 }
 .turbine-tower, .turbine-blade { fill: #e8f0f5; }
 .turbine-hub { fill: #f5e642; }
+/* Lost output: hit at least once (rose; the wake passes, the loss stays) */
+.turbine-symbol.lost .turbine-tower,
+.turbine-symbol.lost .turbine-blade { fill: #f4bcbc; }
 
 /* Fade in, opacity only (no transforms on SVG) */
 @keyframes fade-in { from { opacity: 0; } }
@@ -267,6 +270,25 @@ main {
 }
 
 .legend-item { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+
+#board-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 20px;
+  font-size: 0.8rem;
+  color: #7a96aa;
+  margin-top: -4px;
+}
+.chip {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  background: #244f6e;
+  flex: none;
+}
+.chip-hit { border: 2px solid #ef9a9a; }
+svg.chip { display: block; }
 
 .legend-dot {
   width: 11px;

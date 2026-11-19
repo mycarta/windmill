@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Windmill UI smoke test</title>
+<style>
+  body { background: #1a2e3d; color: #e8f0f5; font-family: system-ui, sans-serif; padding: 16px; }
+  pre  { font-size: 13px; line-height: 1.5; }
+  iframe { width: 1150px; height: 900px; border: 1px solid #2e4b5f; display: block; margin-top: 12px; }
+</style>
+</head>
+<body>
+<h1>Windmill: UI smoke test</h1>
+<p>Drives the real game (<code>../index.html</code>) in iframes and checks what it shows.
+   Needs a local web server (iframes on <code>file://</code> are blocked), e.g.
+   <code>python3 -m http.server</code> in the repo root, then open
+   <code>http://localhost:8000/tests/ui-smoke.html</code>. The title shows PASS or FAIL.</p>
+<pre id="results">running…</pre>
+<iframe id="pick" title="game, tap-to-pick mode"></iframe>
+<iframe id="rand" title="game, random wind"></iframe>
+<script>
+const lines = [];
+let passed = 0, failed = 0;
+function check(name, ok, detail) {
+  if (ok) { passed++; lines.push('PASS  ' + name); }
+  else    { failed++; lines.push('FAIL  ' + name + (detail !== undefined ? '  -> ' + detail : '')); }
+}
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+function load(frame, src) {
+  return new Promise(resolve => {
+    frame.onload = () => resolve(frame.contentWindow);
+    frame.src = src;
+  });
+}
+
+async function run() {
+  // ── Tap-to-pick mode: deterministic directions ───────────────────────────
+  const w = await load(document.getElementById('pick'), '../index.html?wind=pick');
+  await sleep(100);
+  const d = w.document;
+  const $ = id => d.getElementById(id);
+  const click = el => el.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+  const cell = (x, y) => click($(`cell-${x}-${y}`));
+  const pick = dir => click($(`dir-${dir}`));
+  const count = sel => d.querySelectorAll(sel).length;
+  const text = id => $(id).textContent.trim();
+  const recordLines = () => [...d.querySelectorAll('#record li')].map(li => li.textContent);
+
+  lines.push('-- start (tap-to-pick mode)');
+  check('title is Windmill', d.title === 'Windmill', d.title);
+  check('81 squares', count('.cell') === 81, count('.cell'));
+  check('axis numbers 0-8 on two sides', count('.axis-label') === 18);
+  check('turn line "Turn 1 of 8"', text('turn-line') === 'Turn 1 of 8', text('turn-line'));
+  check('status asks for a turbine', text('status') === 'Tap a square to place a turbine', text('status'));
+  check('compass has 8 directions', count('#compass .dir-group') === 8);
+  check('rule line names 8 directions', text('rule-line') === 'In this game, the wind blows only from the 8 directions on the compass.');
+  check('legend: Wind now / Still to come / Used', text('legend') === 'Wind nowStill to comeUsed', text('legend'));
+  check('replay button shown but disabled', !$('replay-btn').hidden && $('replay-btn').disabled);
+
+  lines.push('-- turn 1');
+  cell(4, 4);
+  check('placing asks for a direction', text('status') === 'Pick a wind direction on the compass', text('status'));
+  check('all 8 directions tappable', count('#compass .dir-group.tappable') === 8);
+  cell(5, 5);
+  check('no second turbine before the gust', count('#turbines .turbine-symbol') === 1);
+  pick('N');
+  check('turn line shows the wind', text('turn-line') === 'Turn 1 of 8 · Wind from N', text('turn-line'));
+  check('first gust: no hits', text('status') === 'No turbines hit. Tap a square for the next turbine.', text('status'));
+  check('first gust still draws its wake', count('#wakes .wake') === 1);
+  check('record: "N — none"', recordLines()[0] === 'N — none', recordLines()[0]);
+  check('N is gold (active)', $('dir-N').querySelector('text').classList.contains('active'));
+  check('nothing tappable after the gust', count('#compass .dir-group.tappable') === 0);
+
+  lines.push('-- turn 2');
+  cell(4, 6);
+  check('previous wakes clear on placement', count('#wakes .wake') === 0);
+  check('N now dimmed (used)', $('dir-N').querySelector('text').classList.contains('used'));
+  check('used N not tappable', !$('dir-N').classList.contains('tappable') && count('#compass .dir-group.tappable') === 7);
+  pick('N');
+  check('a used direction cannot be picked again', recordLines().length === 1);
+  pick('S');
+  check('S wind: (4,4) hits (4,6)', text('status') === '1 turbine hit. Tap a square for the next turbine.', text('status'));
+  check('one red border', count('#hit-borders .hit-border') === 1);
+  check('two wakes (every turbine casts one)', count('#wakes .wake') === 2);
+  check('record: "S — hit: (4,6)"', recordLines()[1] === 'S — hit: (4,6)', recordLines()[1]);
+  check('replay button enabled with 2 turbines', !$('replay-btn').disabled);
+
+  lines.push('-- replay with 16 directions (2 turbines in a column)');
+  const turnBefore = text('turn-line'), statusBefore = text('status');
+  click($('replay-btn'));
+  check('replay compass has 16 directions', count('#compass .dir-group') === 16);
+  check('replay legend has 4 items', count('#legend .legend-item') === 4, text('legend'));
+  check('game controls hidden in replay', $('game-buttons').hidden && $('record').hidden && $('rule-line').hidden);
+  check('setting toggle disabled in replay', [...d.querySelectorAll('.set-btn')].every(b => b.disabled));
+  check('replay starts at N with its L', text('turn-line') === 'Replay with 16 directions · Wind from N · 1 of 16'
+        && count('#l-lines .l-line') === 1, text('turn-line'));
+  check('added directions are periwinkle', $('dir-NNE').querySelector('text').classList.contains('added'));
+  click($('step-btn'));
+  check('Step pauses: button now says Play', text('pause-btn') === 'Play');
+  check('Step moves to NNE (no L)', text('turn-line').includes('Wind from NNE') && count('#l-lines .l-line') === 0, text('turn-line'));
+  check('N is used, NNE active', $('dir-N').querySelector('text').classList.contains('used')
+        && $('dir-NNE').querySelector('text').classList.contains('active'));
+  for (let i = 0; i < 15; i++) click($('step-btn'));
+  check('end: counts for 8', text('summary-8') === 'Hit by at least one of the 8 directions: 2 of 2 turbines', text('summary-8'));
+  check('end: counts for 16', text('summary-16') === 'Hit by at least one of the 16 directions: 2 of 2 turbines', text('summary-16'));
+  check('end: only Close remains', $('pause-btn').hidden && $('step-btn').hidden && !$('close-btn').hidden);
+  click($('close-btn'));
+  check('Close: compass back to 8', count('#compass .dir-group') === 8);
+  check('Close: game unchanged (record, turn line, status)',
+        recordLines().length === 2 && text('turn-line') === turnBefore && text('status') === statusBefore);
+  check('Close: game buttons back', !$('game-buttons').hidden && !$('record').hidden);
+
+  lines.push('-- left-hand knight set: 0 hit at 8, 5 hit at 16');
+  click($('reset-btn'));
+  check('Reset clears the board and record', count('#turbines .turbine-symbol') === 0 && recordLines().length === 0);
+  const knight = [[4,4,'N'], [6,5,'NE'], [3,6,'E'], [2,3,'SE'], [5,2,'S']];
+  for (const [x, y, dir] of knight) { cell(x, y); pick(dir); }
+  check('5 turbines, 5 record lines', count('#turbines .turbine-symbol') === 5 && recordLines().length === 5);
+  click($('replay-btn'));
+  let lCount = 0, eneFrames = 0;
+  for (let i = 0; i < 40 && !$('pause-btn').hidden; i++) {
+    if (text('turn-line').includes('Wind from ENE')) { eneFrames++; lCount += count('#l-lines .l-line'); }
+    click($('step-btn'));
+  }
+  check('ENE shows one L per hit turbine (2 frames, 1 L each)', eneFrames === 2 && lCount === 2, eneFrames + ' frames, ' + lCount + ' Ls');
+  check('end: 0 of 5 for 8 directions', text('summary-8') === 'Hit by at least one of the 8 directions: 0 of 5 turbines', text('summary-8'));
+  check('end: 5 of 5 for 16 directions', text('summary-16') === 'Hit by at least one of the 16 directions: 5 of 5 turbines', text('summary-16'));
+  check('end: 5 red borders', count('#hit-borders .hit-border') === 5);
+  click($('close-btn'));
+
+  lines.push('-- end of game');
+  for (const [x, y, dir] of [[0,0,'SW'], [8,8,'W'], [0,8,'NW']]) { cell(x, y); pick(dir); }
+  check('8 gusts recorded', recordLines().length === 8);
+  check('status says all 8 directions have blown', text('status').endsWith('All 8 directions have blown.'), text('status'));
+  cell(8, 0);
+  check('no placement after the end', count('#turbines .turbine-symbol') === 8);
+  check('replay still available after the end', !$('replay-btn').disabled);
+
+  lines.push('-- 16 directions setting');
+  click(d.querySelector('.set-btn[data-setting="16"]'));
+  check('switching resets the game', count('#turbines .turbine-symbol') === 0 && recordLines().length === 0);
+  check('compass has 16 directions', count('#compass .dir-group') === 16);
+  check('caption and rule line say 16', text('compass-caption') === '16 directions'
+        && text('rule-line') === 'In this game, the wind blows only from the 16 directions on the compass.');
+  check('turn line "Turn 1 of 16"', text('turn-line') === 'Turn 1 of 16');
+  check('no replay button in 16 directions', $('replay-btn').hidden);
+
+  // ── Random wind (normal mode) ────────────────────────────────────────────
+  lines.push('-- random wind (normal URL)');
+  const r = await load(document.getElementById('rand'), '../index.html');
+  await sleep(100);
+  const rd = r.document;
+  const rclick = el => el.dispatchEvent(new r.MouseEvent('click', { bubbles: true }));
+  rclick(rd.getElementById('cell-1-1'));
+  check('compass not tappable in normal mode', rd.querySelectorAll('#compass .dir-group.tappable').length === 0);
+  check('status while waiting', rd.getElementById('status').textContent === 'The wind is blowing…');
+  await sleep(800);
+  const cells = [[3,1],[5,1],[7,1],[1,4],[3,4],[5,4],[7,4]];
+  for (const [x, y] of cells) { rclick(rd.getElementById(`cell-${x}-${y}`)); await sleep(800); }
+  const dirs = [...rd.querySelectorAll('#record li .rec-dir')].map(s => s.textContent);
+  check('8 gusts, each direction exactly once', dirs.length === 8 && new Set(dirs).size === 8
+        && dirs.every(x => ['N','NE','E','SE','S','SW','W','NW'].includes(x)), dirs.join(' '));
+  check('random game ends', rd.getElementById('status').textContent.endsWith('All 8 directions have blown.'));
+
+  lines.push('');
+  lines.push((failed === 0 ? 'ALL PASSED' : 'FAILURES') + ': ' + passed + ' passed, ' + failed + ' failed');
+  document.getElementById('results').textContent = lines.join('\n');
+  document.title = (failed === 0 ? 'PASS ' : 'FAIL ') + passed + '/' + (passed + failed);
+}
+
+run().catch(e => {
+  lines.push('ERROR ' + (e && e.stack || e));
+  document.getElementById('results').textContent = lines.join('\n');
+  document.title = 'FAIL error';
+});
+</script>
+</body>
+</html>

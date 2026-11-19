@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Generate Windmill Icons</title>
+  <style>
+    body { font-family: system-ui, sans-serif; background: #111; color: #ccc;
+           display: flex; flex-direction: column; align-items: center;
+           gap: 24px; padding: 40px 16px; }
+    canvas { border-radius: 22%; box-shadow: 0 4px 20px rgba(0,0,0,0.6); }
+    a.dl  { display: inline-block; margin-top: 8px; padding: 0.5em 1.6em;
+            background: #2e5a7d; color: #fff; border-radius: 999px;
+            text-decoration: none; font-weight: 600; font-size: 0.9rem; }
+    a.dl:hover { background: #38688e; }
+    h2 { margin: 0; color: #f5e642; }
+    .pair { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+    /* ?size=512 or ?size=192 shows one bare canvas at the top left, for a
+       headless-browser screenshot of exactly that size. */
+    body.bare { padding: 0; margin: 0; display: block; background: #1a2d3a; }
+    body.bare canvas { border-radius: 0; box-shadow: none; display: block; }
+  </style>
+</head>
+<body>
+  <h1 style="color:#f5e642">Windmill — Icon Generator</h1>
+  <p>Click a download link and save the file under the name shown.</p>
+
+  <div class="pair">
+    <h2>512 × 512</h2>
+    <canvas id="c512" width="512" height="512"></canvas>
+    <a class="dl" id="dl512" download="icon-512.png">⬇ Download icon-512.png</a>
+  </div>
+
+  <div class="pair">
+    <h2>192 × 192</h2>
+    <canvas id="c192" width="192" height="192"></canvas>
+    <a class="dl" id="dl192" download="icon-192.png">⬇ Download icon-192.png</a>
+  </div>
+
+  <script>
+    // The same turbine as the game (game.js turbineSymbol), option B:
+    // off-white blades and tower, gold hub. Units: 100 per board cell.
+    const TOWER = 'M -1.6 4 L -3.4 36 L 3.4 36 L 1.6 4 Z';
+    const BLADE = 'M -1.8 -4 C -5.8 -10 -5.2 -19 -1.6 -26 Q 0 -28.4 1.6 -26.6 C 3.2 -19 3.2 -10 1.8 -4 Z';
+    const ROTOR_ANGLE = -20;   // a fixed tilt, like one of the game's random ones
+
+    function drawIcon(canvas) {
+      const s = canvas.width;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#1a2d3a';
+      ctx.fillRect(0, 0, s, s);
+
+      // The turbine spans y = -28 .. 36 units; centre that span in the icon.
+      const scale = (0.74 * s) / 64;
+      ctx.save();
+      ctx.translate(s / 2, s / 2 - 4 * scale);
+      ctx.scale(scale, scale);
+      ctx.shadowColor = 'rgba(0,0,0,0.55)';
+      ctx.shadowBlur = 0.04 * s;
+      ctx.shadowOffsetY = 0.02 * s;
+
+      ctx.fillStyle = '#e8f0f5';
+      ctx.fill(new Path2D(TOWER));
+      ctx.save();
+      ctx.rotate(ROTOR_ANGLE * Math.PI / 180);
+      for (const a of [0, 120, 240]) {
+        ctx.save();
+        ctx.rotate(a * Math.PI / 180);
+        ctx.fill(new Path2D(BLADE));
+        ctx.restore();
+      }
+      ctx.restore();
+      ctx.fillStyle = '#f5e642';
+      ctx.beginPath();
+      ctx.arc(0, 0, 4.6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    const c512 = document.getElementById('c512');
+    const c192 = document.getElementById('c192');
+    drawIcon(c512);
+    drawIcon(c192);
+    document.getElementById('dl512').href = c512.toDataURL('image/png');
+    document.getElementById('dl192').href = c192.toDataURL('image/png');
+
+    const only = new URLSearchParams(location.search).get('size');
+    if (only === '512' || only === '192') {
+      document.body.className = 'bare';
+      const keep = only === '512' ? c512 : c192;
+      document.body.innerHTML = '';
+      document.body.appendChild(keep);
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,483 @@
+/* WINDMILL — layout and ocean palette.
+   Layout adapted from Dandelions' style.css; every green mapped to ocean blue
+   (see PROPOSAL.md section 5 and DECISIONS.md). SVG elements never get CSS
+   transforms or transform animations: they use SVG transform attributes only. */
+
+[hidden] { display: none !important; }
+
+/* ── Reset & Base ─────────────────────────────────────────────────────────── */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body { height: 100%; }
+
+body {
+  background: #1a2e3d;
+  color: #e8f0f5;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100%;
+  padding: 12px 8px 24px;
+}
+
+/* ── Page wrapper (game column + How to Play) ────────────────────────────── */
+
+#page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  max-width: 440px;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+}
+
+/* ── Header ───────────────────────────────────────────────────────────────── */
+
+header { text-align: center; width: 100%; }
+
+h1 {
+  font-size: clamp(1.6rem, 7vw, 2.2rem);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: #f5e642;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  line-height: 1.1;
+}
+
+#turn-line {
+  margin-top: 4px;
+  font-size: clamp(0.95rem, 3.9vw, 1.1rem);
+  color: #d8e6f0;
+  letter-spacing: 0.03em;
+}
+
+#header-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+/* Setting toggle: 8 directions / 16 directions */
+#setting {
+  display: inline-flex;
+  border: 1px solid #3a586e;
+  border-radius: 999px;
+  overflow: hidden;
+  background: #11202b;
+}
+
+.set-btn {
+  background: transparent;
+  color: #7a96aa;
+  border: none;
+  padding: 0.35em 1.1em;
+  font-size: clamp(0.78rem, 3.1vw, 0.88rem);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s;
+  -webkit-tap-highlight-color: transparent;
+  line-height: 1.4;
+}
+
+.set-btn:first-child { border-right: 1px solid #3a586e; }
+.set-btn.active { background: #2e5a7d; color: #fff; }
+.set-btn:not(.active):hover { background: #1f384a; color: #c5d9e8; }
+.set-btn:focus-visible { outline: 2px solid #f5e642; outline-offset: -2px; }
+.set-btn:disabled { cursor: default; opacity: 0.55; }
+
+/* ── Main layout ──────────────────────────────────────────────────────────── */
+
+main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+}
+
+#board-col, #side-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+/* ── Board ────────────────────────────────────────────────────────────────── */
+
+#grid {
+  display: block;
+  width: 100%;
+  max-width: 440px;
+  aspect-ratio: 1;
+}
+
+.board-bg { fill: #162632; }
+
+.cell rect {
+  fill: #30859e;
+  stroke: #205d70;
+  stroke-width: 2;
+  filter: drop-shadow(0 2px 3px rgba(0,0,0,0.30));
+  transition: fill 0.18s ease;
+}
+
+.cell.turbine rect { fill: #244f6e; stroke: #1a394f; }
+
+#grid.placing .cell.empty { cursor: pointer; }
+#grid.placing .cell.empty:hover rect,
+#grid.placing .cell.empty:focus rect {
+  fill: #40a8be;
+  stroke: #f5e642;
+  stroke-width: 3;
+  outline: none;
+}
+.cell:focus { outline: none; }
+.cell:focus-visible rect { stroke: #f5e642; stroke-width: 4; }
+
+.axis-label {
+  fill: #7a96aa;
+  font-size: 31px;
+  text-anchor: middle;
+  dominant-baseline: central;
+  user-select: none;
+}
+
+/* Wakes: pale streaks; each has its own opacity, so overlaps look brighter */
+.wake {
+  fill: #c5d9e8;
+  opacity: 0.22;
+  pointer-events: none;
+}
+
+.hit-border {
+  fill: none;
+  stroke: #ef9a9a;
+  stroke-width: 6;
+  pointer-events: none;
+}
+
+.l-line {
+  fill: none;
+  stroke: #ef9a9a;
+  stroke-width: 10;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+
+.l-arrow { fill: #ef9a9a; }
+
+/* Turbine (option B): off-white blades and tower, gold hub, flower-style shadow */
+.turbine-symbol {
+  pointer-events: none;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.55));
+}
+.turbine-tower, .turbine-blade { fill: #e8f0f5; }
+.turbine-hub { fill: #f5e642; }
+
+/* Fade in, opacity only (no transforms on SVG) */
+@keyframes fade-in { from { opacity: 0; } }
+.fade-in { animation: fade-in 0.35s ease-out both; }
+.wake.fade-in { animation-name: wake-in; }
+@keyframes wake-in { from { opacity: 0; } to { opacity: 0.22; } }
+
+/* ── Status ───────────────────────────────────────────────────────────────── */
+
+#status {
+  font-size: clamp(0.9rem, 3.8vw, 1.05rem);
+  color: #d4e0ed;
+  text-align: center;
+  min-height: 1.5em;
+  letter-spacing: 0.02em;
+  padding: 0 8px;
+}
+
+/* ── Compass ──────────────────────────────────────────────────────────────── */
+
+#compass-wrap {
+  width: 100%;
+  max-width: 230px;
+  aspect-ratio: 1;
+  background: #11202b;
+  border-radius: 50%;
+  box-shadow: 0 3px 14px rgba(0,0,0,0.4), inset 0 0 0 9px #162632;
+}
+
+#compass { width: 100%; height: 100%; display: block; }
+
+.compass-ring { fill: none; stroke: #2e4b5f; stroke-width: 1; }
+.compass-center { fill: #a8c4d8; }
+
+.dir-text {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  fill: #c5d9e8;                 /* not used yet */
+  text-anchor: middle;
+  dominant-baseline: central;
+  user-select: none;
+  transition: fill 0.25s;
+}
+#compass.n16 .dir-text       { font-size: 12px; }
+#compass.n16 .dir-text.three { font-size: 10px; }
+
+.dir-text.used        { fill: #1f3c51; }   /* switched off: the compass's own blue */
+.dir-text.added       { fill: #94a0f0; }   /* replay: the 8 added directions (periwinkle) */
+.dir-text.added.used  { fill: #282f5d; }
+.dir-text.active      { fill: #f5e642; font-weight: 700; font-size: 14px; }
+#compass.n16 .dir-text.active       { font-size: 13px; }
+#compass.n16 .dir-text.three.active { font-size: 11px; }
+
+/* Private tap-to-pick mode (?wind=pick) */
+.dir-hit { fill: transparent; }
+.dir-group.tappable { cursor: pointer; }
+.dir-group.tappable:hover .dir-text { fill: #f5e642; }
+.dir-group.tappable .dir-hit { fill: rgba(197, 217, 232, 0.06); }
+
+#compass-caption {
+  font-size: clamp(0.95rem, 3.9vw, 1.1rem);
+  color: #a8c4d8;
+  margin-top: -4px;
+}
+
+/* ── Legend ───────────────────────────────────────────────────────────────── */
+
+#legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 16px;
+  font-size: 0.8rem;
+  color: #7a96aa;
+}
+
+.legend-item { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+
+.legend-dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: 1.5px solid #2e4b5f;
+  flex: none;
+}
+
+/* ── Rule line ────────────────────────────────────────────────────────────── */
+
+#rule-line {
+  font-size: 0.85rem;
+  color: #a8c4d8;
+  text-align: center;
+  line-height: 1.45;
+  max-width: 300px;
+}
+
+/* ── Record ───────────────────────────────────────────────────────────────── */
+
+#record {
+  list-style: none;
+  width: 100%;
+  max-width: 300px;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  color: #c5d9e8;
+  font-variant-numeric: tabular-nums;
+}
+#record:empty { display: none; }
+#record li { border-bottom: 1px solid #22394a; padding: 1px 4px; }
+#record li .rec-dir { color: #f5e642; font-weight: 600; display: inline-block; min-width: 2.6em; }
+#record li .rec-none { color: #7a96aa; }
+
+/* ── Replay ───────────────────────────────────────────────────────────────── */
+
+#replay-controls { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
+#replay-summary {
+  text-align: center;
+  font-size: clamp(0.85rem, 3.5vw, 0.95rem);
+  color: #a8c4d8;
+  line-height: 1.45;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+#replay-summary strong {
+  display: block;
+  font-size: 1.2em;
+  font-weight: 700;
+  color: #e8f0f5;
+}
+
+/* ── Buttons ──────────────────────────────────────────────────────────────── */
+
+#game-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 4px;
+}
+
+.pill {
+  background: #11202b;
+  color: #e8f0f5;
+  border: 1.5px solid #4c84af;
+  border-radius: 999px;
+  padding: 0.5em 1.4em;
+  font-size: clamp(0.85rem, 3.5vw, 0.95rem);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  transition: background 0.18s, opacity 0.18s;
+  -webkit-tap-highlight-color: transparent;
+}
+.pill:hover:not(:disabled) { background: #1f384a; }
+.pill.primary { background: #2e5a7d; }
+.pill.primary:hover { background: #38688e; }
+.pill:disabled { opacity: 0.4; cursor: default; }
+.pill:focus-visible { outline: 2px solid #f5e642; outline-offset: 2px; }
+
+#reset-btn {
+  background: #2e5a7d;
+  color: #fff;
+  border: 2px solid #4c84af;
+  border-radius: 999px;
+  padding: 0.5em 2em;
+  font-size: clamp(0.9rem, 3.8vw, 1rem);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: background 0.18s, box-shadow 0.18s;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.35);
+  -webkit-tap-highlight-color: transparent;
+}
+#reset-btn:hover  { background: #38688e; }
+#reset-btn:active { background: #1b405e; }
+#reset-btn:focus-visible { outline: 3px solid #f5e642; outline-offset: 3px; }
+
+/* ── Footer ───────────────────────────────────────────────────────────────── */
+
+footer { width: 100%; display: flex; justify-content: center; }
+
+#game-attribution {
+  font-size: 0.72rem;
+  color: #5a768a;
+  text-align: center;
+  line-height: 1.6;
+  padding: 0 12px;
+}
+#game-attribution a { color: #7a96aa; text-decoration: underline; text-underline-offset: 2px; }
+#game-attribution a:hover { color: #a8c4d8; }
+
+/* ── How to Play (collapsible) ────────────────────────────────────────────── */
+
+#how-to-play { width: 100%; max-width: 440px; }
+
+#htp-toggle {
+  width: 100%;
+  background: #162632;
+  color: #a8c4d8;
+  border: 1px solid #2e4b5f;
+  border-radius: 8px;
+  padding: 0.55em 1.1em;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  text-align: left;
+  -webkit-tap-highlight-color: transparent;
+}
+#htp-toggle:hover { background: #1f384a; color: #c5d9e8; }
+#htp-toggle:focus-visible { outline: 2px solid #f5e642; outline-offset: 2px; }
+#htp-toggle[aria-expanded="true"] {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border-bottom-color: transparent;
+}
+
+.htp-collapsed { display: none; }
+
+#htp-body {
+  background: #162632;
+  border: 1px solid #2e4b5f;
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  padding: 14px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+#htp-body.htp-collapsed { display: none; }
+
+#htp-body h2 {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #f5e642;
+}
+#htp-body p, #htp-body li { font-size: 0.84rem; line-height: 1.55; color: #c5d9e8; }
+#htp-body strong { color: #d8e6f0; font-weight: 600; }
+#htp-body ol { padding-left: 1.4em; display: flex; flex-direction: column; gap: 6px; }
+.htp-attribution {
+  font-size: 0.74rem !important;
+  font-style: italic;
+  color: #7a96aa !important;
+  border-top: 1px solid #2e4b5f;
+  padding-top: 8px;
+}
+
+/* ── Wider screens ────────────────────────────────────────────────────────── */
+
+@media (min-width: 480px) {
+  body { padding: 24px 16px 40px; }
+  #app { gap: 18px; }
+}
+
+/* Board and compass side by side */
+@media (min-width: 760px) {
+  #page { max-width: 760px; }
+  main { flex-direction: row; align-items: flex-start; justify-content: center; gap: 28px; }
+  #board-col { flex: 0 1 460px; }
+  #side-col { flex: 0 0 270px; padding-top: 10px; }
+  #how-to-play { max-width: 760px; }
+}
+
+/* Very wide: How to Play becomes an always-open sidebar */
+@media (min-width: 1100px) {
+  #page { flex-direction: row; align-items: flex-start; max-width: 1080px; gap: 28px; }
+  #app { flex: 0 0 760px; }
+  #how-to-play { flex: 1 1 280px; max-width: 300px; padding-top: 6px; }
+  #htp-toggle { display: none; }
+  #htp-body, #htp-body.htp-collapsed {
+    display: flex;
+    border: 1px solid #2e4b5f;
+    border-radius: 8px;
+    padding: 16px 18px 18px;
+  }
+}
+
+/* ── Short screens (e.g. iPhone SE 375×667) ───────────────────────────────── */
+
+@media (max-height: 700px) and (max-width: 759px) {
+  body { padding-top: 8px; padding-bottom: 8px; }
+  #app, main { gap: 9px; }
+  h1 { font-size: clamp(1.3rem, 6vw, 1.8rem); }
+  #header-controls { margin-top: 6px; }
+  #grid { max-width: 330px; }
+  #compass-wrap { max-width: 180px; }
+}

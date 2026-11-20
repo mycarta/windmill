@@ -10,7 +10,10 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
 // Private tap-to-pick mode: index.html?wind=pick lets a person tap the
 // direction on the compass instead of the random draw. Nothing on screen
 // mentions it.
-const PICK_MODE = new URLSearchParams(location.search).get('wind') === 'pick';
+const PARAMS = new URLSearchParams(location.search);
+const PICK_MODE = PARAMS.get('wind') === 'pick';
+// Private: knight's-move L lines in the replay, for the video. No mention on screen.
+const KNIGHT_LINES = PARAMS.get('lines') === 'knight';
 
 const GUST_DELAY_MS   = 500;    // pause between placing a turbine and the gust
 const REPLAY_FRAME_MS = 1200;   // each replay frame (a gust, or one L within it)
@@ -287,6 +290,19 @@ function canPlace() {
 function setStatus(msg) { $('status').textContent = msg; }
 function setTurnLine(msg) { $('turn-line').textContent = msg; }
 
+// The replay header always takes two lines, so the board does not move while
+// the replay plays. An empty second line keeps its height (no-break space).
+function setTurnLineParts(first, second) {
+  const el = $('turn-line');
+  el.innerHTML = '';
+  for (const part of [first, second || '\u00a0']) {
+    const line = document.createElement('span');
+    line.className = 'line';
+    line.textContent = part;
+    el.appendChild(line);
+  }
+}
+
 function turnLine() {
   const n = Math.max(turbines.length, 1);
   return current ? `Turn ${n} of ${setting} · Wind from ${current.dir}` : `Turn ${n} of ${setting}`;
@@ -424,7 +440,7 @@ function openReplay() {
     const hits = hitsForGust(turbines, dir);
     hits.forEach(i => lostSoFar.add(i));
     const lost = new Set(lostSoFar);
-    const pairs = nearestHitPairs(turbines, dir);
+    const pairs = KNIGHT_LINES ? knightHitPairs(turbines, dir) : [];
     if (pairs.length === 0) frames.push({ dir, hits, lost, pair: null });
     else pairs.forEach(pair => frames.push({ dir, hits, lost, pair }));
   }
@@ -465,7 +481,7 @@ function showFrame(i) {
     // No gust now, so no red borders: lost output, with a faint rose border.
     drawBoard({ lost: new Set(replay.hit16), lostBorders: true });
     paintCompass(dir => ({ active: false, used: true, added: !DIRECTIONS_8.includes(dir), tappable: false }));
-    setTurnLine('Replay with 16 directions');
+    setTurnLineParts('Replay with 16 directions', '');
     setStatus('');
     setSummary('summary-8',  'Hit by at least one of the 8 directions:',  `${replay.hit8} of ${n} turbines`);
     setSummary('summary-16', 'Hit by at least one of the 16 directions:', `${replay.hit16.length} of ${n} turbines`);
@@ -483,7 +499,7 @@ function showFrame(i) {
     const active = dir === f.dir;
     return { active, used: !active && DIRECTIONS_16.indexOf(dir) < k, added, tappable: false };
   });
-  setTurnLine(`Replay with 16 directions · Wind from ${f.dir} · ${k + 1} of 16`);
+  setTurnLineParts('Replay with 16 directions', `Wind from ${f.dir} · ${k + 1} of 16`);
   setStatus(hitText(f.hits.length));
 }
 

@@ -34,10 +34,9 @@ and tap "Add to Home Screen". It works offline after that.
 
 With 8 directions, **Replay with 16 directions** takes the turbines on the board
 and blows all 16 directions over them, one at a time, with **Pause / Play** and
-**Step**. When a gust hits a turbine, an L shows how many rows and columns it is
-from the closest upwind turbine that hits it, and turbines turn rose as they
-are hit. At the end, two counts compare the
-8 original directions with all 16:
+**Step**. Each gust shows its wakes and red borders, and turbines turn rose as
+they are hit. At the end, two counts compare the 8 original directions with
+all 16:
 
 > Hit by at least one of the 8 directions: X of N turbines
 > Hit by at least one of the 16 directions: Y of N turbines

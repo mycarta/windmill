@@ -18,6 +18,7 @@
 <pre id="results">running…</pre>
 <iframe id="pick" title="game, tap-to-pick mode"></iframe>
 <iframe id="rand" title="game, random wind"></iframe>
+<iframe id="lines" title="game, tap-to-pick with knight lines"></iframe>
 <script>
 const lines = [];
 let passed = 0, failed = 0;
@@ -96,18 +97,21 @@ async function run() {
   check('replay legend has 4 items', count('#legend .legend-item') === 4, text('legend'));
   check('game controls hidden in replay', $('game-buttons').hidden && $('record').hidden && $('rule-line').hidden);
   check('setting toggle disabled in replay', [...d.querySelectorAll('.set-btn')].every(b => b.disabled));
-  check('replay starts at N with its L', text('turn-line') === 'Replay with 16 directions · Wind from N · 1 of 16'
-        && count('#l-lines .l-line') === 1, text('turn-line'));
+  const headerLines = () => [...d.querySelectorAll('#turn-line .line')].map(e => e.textContent.trim());
+  check('replay starts at N, with no L (public replay)', headerLines().join(' / ') === 'Replay with 16 directions / Wind from N · 1 of 16'
+        && count('#l-lines .l-line') === 0, headerLines().join(' / '));
   check('added directions are periwinkle', $('dir-NNE').querySelector('text').classList.contains('added'));
   check('replay starts fresh: at N only (4,4) has lost output', lostAt(4, 4) && !lostAt(4, 6));
   click($('step-btn'));
   check('Step pauses: button now says Play', text('pause-btn') === 'Play');
-  check('Step moves to NNE (no L)', text('turn-line').includes('Wind from NNE') && count('#l-lines .l-line') === 0, text('turn-line'));
+  check('Step moves to NNE', text('turn-line').includes('Wind from NNE'), text('turn-line'));
   check('N is used, NNE active', $('dir-N').querySelector('text').classList.contains('used')
         && $('dir-NNE').querySelector('text').classList.contains('active'));
   for (let i = 0; i < 15; i++) click($('step-btn'));
   check('end: counts for 8', text('summary-8') === 'Hit by at least one of the 8 directions: 2 of 2 turbines', text('summary-8'));
   check('end: counts for 16', text('summary-16') === 'Hit by at least one of the 16 directions: 2 of 2 turbines', text('summary-16'));
+  check('end: header keeps two lines, the second empty', headerLines().join(' / ') === 'Replay with 16 directions / ',
+        headerLines().join(' / '));
   check('end: only Close remains', $('pause-btn').hidden && $('step-btn').hidden && !$('close-btn').hidden);
   check('end: both turbines lost output, no borders', lostAt(4, 4) && lostAt(4, 6) && count('#hit-borders .hit-border') === 0);
   click($('close-btn'));
@@ -131,12 +135,14 @@ async function run() {
   for (const [x, y, dir] of knight) { cell(x, y); pick(dir); }
   check('5 turbines, 5 record lines', count('#turbines .turbine-symbol') === 5 && recordLines().length === 5);
   click($('replay-btn'));
-  let lCount = 0, eneFrames = 0;
+  let lCount = 0, eneFrames = 0, frames = 0;
   for (let i = 0; i < 40 && !$('pause-btn').hidden; i++) {
-    if (text('turn-line').includes('Wind from ENE')) { eneFrames++; lCount += count('#l-lines .l-line'); }
+    frames++; lCount += count('#l-lines .l-line');
+    if (text('turn-line').includes('Wind from ENE')) eneFrames++;
     click($('step-btn'));
   }
-  check('ENE shows one L per hit turbine (2 frames, 1 L each)', eneFrames === 2 && lCount === 2, eneFrames + ' frames, ' + lCount + ' Ls');
+  check('public replay: one frame per gust, no Ls at all', frames === 16 && eneFrames === 1 && lCount === 0,
+        frames + ' frames, ' + eneFrames + ' ENE, ' + lCount + ' Ls');
   check('end: 0 of 5 for 8 directions', text('summary-8') === 'Hit by at least one of the 8 directions: 0 of 5 turbines', text('summary-8'));
   check('end: 5 of 5 for 16 directions', text('summary-16') === 'Hit by at least one of the 16 directions: 5 of 5 turbines', text('summary-16'));
   check('end: all 5 turbines lost output, no red borders, 5 faint rose borders',
@@ -160,6 +166,44 @@ async function run() {
         && text('rule-line') === 'In this game, the wind blows only from the 16 directions on the compass.');
   check('turn line "Turn 1 of 16"', text('turn-line') === 'Turn 1 of 16');
   check('no replay button in 16 directions', $('replay-btn').hidden);
+
+  // ── Private knight lines (?lines=knight) ─────────────────────────────────
+  lines.push('-- knight lines (?wind=pick&lines=knight)');
+  const k = await load(document.getElementById('lines'), '../index.html?wind=pick&lines=knight');
+  await sleep(100);
+  const kd = k.document;
+  const k$ = id => kd.getElementById(id);
+  const kclick = el => el.dispatchEvent(new k.MouseEvent('click', { bubbles: true }));
+  const ktext = id => k$(id).textContent.trim();
+  const kcount = sel => kd.querySelectorAll(sel).length;
+  const kplace = (x, y, dir) => { kclick(k$(`cell-${x}-${y}`)); kclick(k$(`dir-${dir}`)); };
+  // Walk the replay; returns {dir: [frames, Ls, borders]} per gust.
+  const walk = () => {
+    const seen = {};
+    for (let i = 0; i < 60 && !k$('pause-btn').hidden; i++) {
+      const dir = ktext('turn-line').match(/Wind from (\w+)/)[1];
+      const e = seen[dir] || (seen[dir] = [0, 0, 0]);
+      e[0]++; e[1] += kcount('#l-lines .l-line'); e[2] = kcount('#hit-borders .hit-border');
+      kclick(k$('step-btn'));
+    }
+    return seen;
+  };
+  kplace(0, 1, 'N'); kplace(3, 4, 'E');
+  kclick(k$('replay-btn'));
+  let seen = walk();
+  check('diagonal hit (3 across, 3 up) under SW: border, no L', seen.SW && seen.SW[2] === 1 && seen.SW[1] === 0,
+        JSON.stringify(seen.SW));
+  check('no Ls anywhere for a diagonal pair', Object.values(seen).every(e => e[1] === 0));
+  kclick(k$('close-btn'));
+  kclick(k$('reset-btn'));
+  for (const [x, y, dir] of knight) kplace(x, y, dir);
+  kclick(k$('replay-btn'));
+  seen = walk();
+  check('ENE: one L for each knight\'s-move pair (2 frames, 1 L each)', seen.ENE && seen.ENE[0] === 2 && seen.ENE[1] === 2,
+        JSON.stringify(seen.ENE));
+  check('original 8 directions never draw an L', ['N','NE','E','SE','S','SW','W','NW'].every(dd => seen[dd][1] === 0));
+  check('knight Ls do appear, in added directions', Object.entries(seen).some(([dd, e]) => e[1] > 0));
+  kclick(k$('close-btn'));
 
   // ── Random wind (normal mode) ────────────────────────────────────────────
   lines.push('-- random wind (normal URL)');

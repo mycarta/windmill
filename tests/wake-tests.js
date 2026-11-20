@@ -117,15 +117,34 @@ check('just beyond WAKE_HALF_WIDTH is not hit',             !isHit(t(0, 0), t(0.
 })();
 
 (function () {
-  // One L per hit turbine, from the closest upwind turbine (replay).
+  // L lines (private ?lines=knight replay): only knight's-move pairs.
   const set = [t(4, 4), t(6, 5), t(3, 6), t(2, 3), t(5, 2)];   // left-hand knight set
   const all = hitPairs(set, 'ENE').length;
-  const ls = nearestHitPairs(set, 'ENE')
+  const ls = knightHitPairs(set, 'ENE')
     .map(function (p) { return key(set[p.from]) + '->' + key(set[p.to]); }).join(' ');
   check('ENE over the left-hand knight set: 3 hit pairs', all === 3, all + ' pairs');
-  check('ENE: one L per hit turbine, from the closest upwind turbine',
-        ls === '(6,5)->(4,4) (4,4)->(2,3)' || ls === '(4,4)->(2,3) (6,5)->(4,4)', ls);
-  check('ENE: the long (6,5)->(2,3) L is not drawn', ls.indexOf('(6,5)->(2,3)') < 0, ls);
+  check('ENE: Ls only for the two knight\'s-move pairs', ls === '(6,5)->(4,4) (4,4)->(2,3)', ls);
+  check('ENE: the (6,5)->(2,3) pair (4 across, 2 down) gets no L', ls.indexOf('(6,5)->(2,3)') < 0, ls);
+  const diag = [t(0, 1), t(3, 4)];
+  check('SW diagonal hit (3 across, 3 up) gets no L',
+        hitPairs(diag, 'SW').length === 1 && knightHitPairs(diag, 'SW').length === 0);
+  const col = [t(4, 6), t(4, 4)];
+  check('N hit down a column gets no L', hitPairs(col, 'N').length === 1 && knightHitPairs(col, 'N').length === 0);
+})();
+
+(function () {
+  // A knight's move is never hit by the 8 directions, and always by exactly
+  // one of the 8 added directions.
+  const moves = [[1, 2], [2, 1], [2, -1], [1, -2], [-1, -2], [-2, -1], [-2, 1], [-1, 2]];
+  const bad = [];
+  for (const m of moves) {
+    const b = t(m[0], m[1]);
+    const by8  = directionsFor(8).filter(function (d) { return isHit(t(0, 0), b, d); });
+    const by16 = directionsFor(16).filter(function (d) { return isHit(t(0, 0), b, d); });
+    if (by8.length !== 0 || by16.length !== 1 || !isKnightMove(t(0, 0), b)) bad.push(m.join(','));
+  }
+  check('every knight\'s move: missed by the 8 directions, hit by exactly one added direction',
+        bad.length === 0, bad.join(' '));
 })();
 
 check('no turbines, no hits', hitsForGust([], 'N').length === 0 && hitByAny([], directionsFor(16)).length === 0);

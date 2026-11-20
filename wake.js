@@ -71,26 +71,21 @@ function hitsForGust(turbines, dir) {
   return [...hit].sort((p, q) => p - q);
 }
 
-// One pair per hit turbine: from the closest upwind turbine that hits it.
-// Ties (equal distance) go to the turbine nearer the wind line, then to the
-// lower index, so the result is always the same.
-function nearestHitPairs(turbines, dir) {
-  const best = new Map();
-  for (const p of hitPairs(turbines, dir)) {
-    const a = turbines[p.from];
-    const b = turbines[p.to];
-    const dist = Math.hypot(b.x - a.x, b.y - a.y);
-    const perp = wakeGeometry(a, b, dir).perp;
-    const cur = best.get(p.to);
-    if (!cur ||
-        dist < cur.dist - WAKE_EPS ||
-        (Math.abs(dist - cur.dist) <= WAKE_EPS && perp < cur.perp - WAKE_EPS)) {
-      best.set(p.to, { from: p.from, to: p.to, dist, perp });
-    }
-  }
-  return [...best.values()]
-    .sort((p, q) => p.dist - q.dist || p.to - q.to)
-    .map(p => ({ from: p.from, to: p.to }));
+// True when B is a knight's move from A: 1 cell one way and 2 the other.
+function isKnightMove(a, b) {
+  const dx = Math.abs(b.x - a.x);
+  const dy = Math.abs(b.y - a.y);
+  return (dx === 1 && dy === 2) || (dx === 2 && dy === 1);
+}
+
+// The hit pairs of one gust that are a knight's move apart, sorted by the hit
+// turbine. Used only for the L lines of the private replay (?lines=knight).
+// The 8 directions never hit a knight's move; exactly one of the 8 added
+// directions always does, so a hit turbine has at most one such pair per gust.
+function knightHitPairs(turbines, dir) {
+  return hitPairs(turbines, dir)
+    .filter(p => isKnightMove(turbines[p.from], turbines[p.to]))
+    .sort((p, q) => p.to - q.to);
 }
 
 // Indices of the turbines hit by at least one of the given directions,

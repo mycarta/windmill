@@ -61,6 +61,8 @@ h1 {
   letter-spacing: 0.03em;
 }
 
+#turn-line .line { display: block; }
+
 #header-controls {
   display: flex;
   align-items: center;

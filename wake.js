@@ -6,7 +6,8 @@
 //
 // Coordinates: cell (0,0) is the south-west corner, x grows east, y grows
 // north. Turbines sit on cell centres and are objects {x, y}.
-// A direction is named for where the wind COMES FROM: a N wind blows south.
+// A direction is named for where the wind BLOWS TOWARD, as in Dandelions: a N
+// wind blows north, and its wakes stream north.
 
 // ── Constants (change them here only) ────────────────────────────────────────
 
@@ -30,10 +31,10 @@ function bearingOf(dir) {
   return i * 22.5;
 }
 
-// Downwind unit vector (east, north) for a wind FROM dir.
+// Downwind unit vector (east, north) for a wind blowing toward dir.
 function downwindVector(dir) {
   const t = bearingOf(dir) * Math.PI / 180;
-  return [-Math.sin(t), -Math.cos(t)];
+  return [Math.sin(t), Math.cos(t)];
 }
 
 // Where B sits relative to the wind line through A:
@@ -45,7 +46,7 @@ function wakeGeometry(a, b, dir) {
   return { along: dx * ux + dy * uy, perp: Math.abs(dx * uy - dy * ux) };
 }
 
-// Is B inside A's wake for a wind from dir?
+// Is B inside A's wake for a wind blowing toward dir?
 function isHit(a, b, dir) {
   const { along, perp } = wakeGeometry(a, b, dir);
   return along > WAKE_EPS &&

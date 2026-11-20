@@ -57,7 +57,7 @@ async function run() {
   check('turn line "Turn 1 of 8"', text('turn-line') === 'Turn 1 of 8', text('turn-line'));
   check('status asks for a turbine', text('status') === 'Tap a square to place a turbine', text('status'));
   check('compass has 8 directions', count('#compass .dir-group') === 8);
-  check('rule line names 8 directions', text('rule-line') === 'In this game, the wind blows only from the 8 directions on the compass.');
+  check('rule line names 8 directions', text('rule-line') === 'In this game, the wind blows only in the 8 directions on the compass.');
   check('legend: Wind now / Still to come / Used', text('legend') === 'Wind nowStill to comeUsed', text('legend'));
   check('replay button shown but disabled', !$('replay-btn').hidden && $('replay-btn').disabled);
 
@@ -68,7 +68,7 @@ async function run() {
   cell(5, 5);
   check('no second turbine before the gust', count('#turbines .turbine-symbol') === 1);
   pick('N');
-  check('header shows the wind on its second line', headerLines().join(' / ') === 'Turn 1 of 8 / Wind from N', headerLines().join(' / '));
+  check('header shows the wind on its second line', headerLines().join(' / ') === 'Turn 1 of 8 / Wind blows N', headerLines().join(' / '));
   check('first gust: no hits', text('status') === 'No turbines hit. Tap a square for the next turbine.', text('status'));
   check('first gust still draws its wake', count('#wakes .wake') === 1);
   check('record: "N — none"', recordLines()[0] === 'N — none', recordLines()[0]);
@@ -76,20 +76,20 @@ async function run() {
   check('nothing tappable after the gust', count('#compass .dir-group.tappable') === 0);
 
   lines.push('-- turn 2');
-  cell(4, 6);
+  cell(4, 2);
   check('previous wakes clear on placement', count('#wakes .wake') === 0);
   check('N now dimmed (used)', $('dir-N').querySelector('text').classList.contains('used'));
   check('used N not tappable', !$('dir-N').classList.contains('tappable') && count('#compass .dir-group.tappable') === 7);
   pick('N');
   check('a used direction cannot be picked again', recordLines().length === 1);
   pick('S');
-  check('S wind: (4,4) hits (4,6)', text('status') === '1 turbine hit. Tap a square for the next turbine.', text('status'));
+  check('S wind: (4,4) hits (4,2)', text('status') === '1 turbine hit. Tap a square for the next turbine.', text('status'));
   check('one red border', count('#hit-borders .hit-border') === 1);
   check('two wakes (every turbine casts one)', count('#wakes .wake') === 2);
-  check('record: "S — hit: (4,6)"', recordLines()[1] === 'S — hit: (4,6)', recordLines()[1]);
+  check('record: "S — hit: (4,2)"', recordLines()[1] === 'S — hit: (4,2)', recordLines()[1]);
   check('replay button enabled with 2 turbines', !$('replay-btn').disabled);
   const lostAt = (x, y) => d.querySelector(`#turbines .turbine-symbol[data-x="${x}"][data-y="${y}"]`).classList.contains('lost');
-  check('the hit turbine (4,6) has lost output (vermilion)', lostAt(4, 6) && !lostAt(4, 4));
+  check('the hit turbine (4,2) has lost output (vermilion)', lostAt(4, 2) && !lostAt(4, 4));
   check('board legend: Hit now / Lost output', text('board-legend').replace(/\s+/g, ' ') === 'Hit now Lost output', text('board-legend'));
 
   lines.push('-- replay with 16 directions (2 turbines in a column)');
@@ -100,13 +100,13 @@ async function run() {
   check('replay legend has 4 items', count('#legend .legend-item') === 4, text('legend'));
   check('game controls hidden in replay', $('game-buttons').hidden && $('record').hidden && $('rule-line').hidden);
   check('setting toggle disabled in replay', [...d.querySelectorAll('.set-btn')].every(b => b.disabled));
-  check('replay starts at N, with no L (public replay)', headerLines().join(' / ') === 'Replay with 16 directions / Wind from N · 1 of 16'
+  check('replay starts at N, with no L (public replay)', headerLines().join(' / ') === 'Replay with 16 directions / Wind blows N · 1 of 16'
         && count('#l-lines .l-line') === 0, headerLines().join(' / '));
   check('added directions are periwinkle', $('dir-NNE').querySelector('text').classList.contains('added'));
-  check('replay starts fresh: at N only (4,4) has lost output', lostAt(4, 4) && !lostAt(4, 6));
+  check('replay starts fresh: at N only (4,4) has lost output', lostAt(4, 4) && !lostAt(4, 2));
   click($('step-btn'));
   check('Step pauses: button now says Play', text('pause-btn') === 'Play');
-  check('Step moves to NNE', text('turn-line').includes('Wind from NNE'), text('turn-line'));
+  check('Step moves to NNE', text('turn-line').includes('Wind blows NNE'), text('turn-line'));
   check('N is used, NNE active', $('dir-N').querySelector('text').classList.contains('used')
         && $('dir-NNE').querySelector('text').classList.contains('active'));
   for (let i = 0; i < 15; i++) click($('step-btn'));
@@ -116,7 +116,7 @@ async function run() {
   check('end: header keeps two lines, the second empty', headerLines().join(' / ') === 'Replay with 16 directions / ',
         headerLines().join(' / '));
   check('end: only Close remains', $('pause-btn').hidden && $('step-btn').hidden && !$('close-btn').hidden);
-  check('end: both turbines lost output, no borders', lostAt(4, 4) && lostAt(4, 6) && count('#hit-borders .hit-border') === 0);
+  check('end: both turbines lost output, no borders', lostAt(4, 4) && lostAt(4, 2) && count('#hit-borders .hit-border') === 0);
   click($('close-btn'));
   check('board does not move when the replay closes', boardTop() === topBefore, topBefore + ' -> ' + boardTop());
   check('Close: compass back to 8', count('#compass .dir-group') === 8);
@@ -124,13 +124,13 @@ async function run() {
         recordLines().length === 2 && text('turn-line') === turnBefore && text('status') === statusBefore);
   check('Close: game legend back', text('legend') === 'Wind nowStill to comeUsed', text('legend'));
   check('Close: game buttons back', !$('game-buttons').hidden && !$('record').hidden);
-  check('Close: lost output back to the game\'s own', lostAt(4, 6) && !lostAt(4, 4));
+  check('Close: lost output back to the game\'s own', lostAt(4, 2) && !lostAt(4, 4));
 
   lines.push('-- turn 3: the wake passes, the loss stays');
   cell(0, 0);
   pick('E');
   check('E wind hits nothing: no red borders', count('#hit-borders .hit-border') === 0, text('status'));
-  check('(4,6) still shows lost output', lostAt(4, 6) && !lostAt(4, 4) && !lostAt(0, 0));
+  check('(4,2) still shows lost output', lostAt(4, 2) && !lostAt(4, 4) && !lostAt(0, 0));
 
   lines.push('-- left-hand knight set: 0 hit at 8, 5 hit at 16');
   click($('reset-btn'));
@@ -142,7 +142,7 @@ async function run() {
   let lCount = 0, eneFrames = 0, frames = 0;
   for (let i = 0; i < 40 && !$('pause-btn').hidden; i++) {
     frames++; lCount += count('#l-lines .l-line');
-    if (text('turn-line').includes('Wind from ENE')) eneFrames++;
+    if (text('turn-line').includes('Wind blows ENE')) eneFrames++;
     click($('step-btn'));
   }
   check('public replay: one frame per gust, no Ls at all', frames === 16 && eneFrames === 1 && lCount === 0,
@@ -171,7 +171,7 @@ async function run() {
   check('switching resets the game', count('#turbines .turbine-symbol') === 0 && recordLines().length === 0);
   check('compass has 16 directions', count('#compass .dir-group') === 16);
   check('caption and rule line say 16', text('compass-caption') === '16 directions'
-        && text('rule-line') === 'In this game, the wind blows only from the 16 directions on the compass.');
+        && text('rule-line') === 'In this game, the wind blows only in the 16 directions on the compass.');
   check('turn line "Turn 1 of 16"', text('turn-line') === 'Turn 1 of 16');
   check('no replay button in 16 directions', $('replay-btn').hidden);
 
@@ -189,7 +189,7 @@ async function run() {
   const walk = () => {
     const seen = {};
     for (let i = 0; i < 60 && !k$('pause-btn').hidden; i++) {
-      const dir = ktext('turn-line').match(/Wind from (\w+)/)[1];
+      const dir = ktext('turn-line').match(/Wind blows (\w+)/)[1];
       const e = seen[dir] || (seen[dir] = [0, 0, 0]);
       e[0]++; e[1] += kcount('#l-lines .l-line'); e[2] = kcount('#hit-borders .hit-border');
       kclick(k$('step-btn'));

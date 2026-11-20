@@ -36,10 +36,10 @@ check('16 directions add NNE ENE ESE SSE SSW WSW WNW NNW in order',
 (function () {
   const n = downwindVector('N');
   const e = downwindVector('E');
-  check('a N wind blows south: downwind = (0, -1)',
-        Math.abs(n[0]) < 1e-12 && Math.abs(n[1] + 1) < 1e-12, n.join(', '));
-  check('an E wind blows west: downwind = (-1, 0)',
-        Math.abs(e[0] + 1) < 1e-12 && Math.abs(e[1]) < 1e-12, e.join(', '));
+  check('a N wind blows north: downwind = (0, 1)',
+        Math.abs(n[0]) < 1e-12 && Math.abs(n[1] - 1) < 1e-12, n.join(', '));
+  check('an E wind blows east: downwind = (1, 0)',
+        Math.abs(e[0] - 1) < 1e-12 && Math.abs(e[1]) < 1e-12, e.join(', '));
 })();
 
 // ── 2. Smallest distance table (fixtures) ────────────────────────────────────
@@ -82,15 +82,16 @@ wtLog('-- patterns: centre (4,4) plus offsets, every turbine exposed to every di
 // ── 4. Edge cases of the rule ────────────────────────────────────────────────
 
 wtLog('-- edge cases');
-check('N wind: B south of A is hit',           isHit(t(4, 4), t(4, 2), 'N'));
-check('S wind: B south of A is not hit',       !isHit(t(4, 4), t(4, 2), 'S'));
+check('S wind: B south of A is hit',           isHit(t(4, 4), t(4, 2), 'S'));
+check('N wind: B south of A is not hit',       !isHit(t(4, 4), t(4, 2), 'N'));
 check('a turbine never hits itself',           !isHit(t(4, 4), t(4, 4), 'N'));
 check('side by side across the wind is not hit (along = 0)', !isHit(t(4, 4), t(5, 4), 'N'));
-check('exactly WAKE_LENGTH (6) downwind is hit',            isHit(t(0, 4), t(6, 4), 'W'));
-check('WAKE_LENGTH + 1 (7) downwind is not hit',            !isHit(t(0, 4), t(7, 4), 'W'));
-check('diagonal NE wind: (5,5) hits (3,3)',                 isHit(t(5, 5), t(3, 3), 'NE'));
-check('exactly WAKE_HALF_WIDTH off the line is hit (tolerance)', isHit(t(0, 0), t(0.5, -3), 'N'));
-check('just beyond WAKE_HALF_WIDTH is not hit',             !isHit(t(0, 0), t(0.5001, -3), 'N'));
+check('exactly WAKE_LENGTH (6) downwind is hit',            isHit(t(0, 4), t(6, 4), 'E'));
+check('WAKE_LENGTH + 1 (7) downwind is not hit',            !isHit(t(0, 4), t(7, 4), 'E'));
+check('diagonal SW wind: (5,5) hits (3,3)',                 isHit(t(5, 5), t(3, 3), 'SW'));
+check('the wake streams the way the wind is named: NE wind, (3,3) hits (5,5)', isHit(t(3, 3), t(5, 5), 'NE'));
+check('exactly WAKE_HALF_WIDTH off the line is hit (tolerance)', isHit(t(0, 0), t(0.5, -3), 'S'));
+check('just beyond WAKE_HALF_WIDTH is not hit',             !isHit(t(0, 0), t(0.5001, -3), 'S'));
 
 (function () {
   // Exact boundaries in every direction. On diagonals, floating-point rounding
@@ -109,27 +110,27 @@ check('just beyond WAKE_HALF_WIDTH is not hit',             !isHit(t(0, 0), t(0.
 (function () {
   // Every turbine casts a wake, even when it is itself hit; no stacking.
   const row = [t(4, 6), t(4, 4), t(4, 2)];
-  const hits = hitsForGust(row, 'N').map(function (i) { return key(row[i]); }).join(' ');
-  check('N wind down a column: middle and bottom turbines hit', hits === '(4,4) (4,2)', hits);
-  const pairs = hitPairs(row, 'N').length;
-  check('the bottom turbine is in two wakes (two pairs) but counted once', pairs === 3 && hitsForGust(row, 'N').length === 2,
+  const hits = hitsForGust(row, 'S').map(function (i) { return key(row[i]); }).join(' ');
+  check('S wind down a column: middle and bottom turbines hit', hits === '(4,4) (4,2)', hits);
+  const pairs = hitPairs(row, 'S').length;
+  check('the bottom turbine is in two wakes (two pairs) but counted once', pairs === 3 && hitsForGust(row, 'S').length === 2,
         pairs + ' pairs');
 })();
 
 (function () {
   // L lines (private ?lines=knight replay): only knight's-move pairs.
   const set = [t(4, 4), t(6, 5), t(3, 6), t(2, 3), t(5, 2)];   // left-hand knight set
-  const all = hitPairs(set, 'ENE').length;
-  const ls = knightHitPairs(set, 'ENE')
+  const all = hitPairs(set, 'WSW').length;
+  const ls = knightHitPairs(set, 'WSW')
     .map(function (p) { return key(set[p.from]) + '->' + key(set[p.to]); }).join(' ');
-  check('ENE over the left-hand knight set: 3 hit pairs', all === 3, all + ' pairs');
-  check('ENE: Ls only for the two knight\'s-move pairs', ls === '(6,5)->(4,4) (4,4)->(2,3)', ls);
-  check('ENE: the (6,5)->(2,3) pair (4 across, 2 down) gets no L', ls.indexOf('(6,5)->(2,3)') < 0, ls);
+  check('WSW over the left-hand knight set: 3 hit pairs', all === 3, all + ' pairs');
+  check('WSW: Ls only for the two knight\'s-move pairs', ls === '(6,5)->(4,4) (4,4)->(2,3)', ls);
+  check('WSW: the (6,5)->(2,3) pair (4 across, 2 down) gets no L', ls.indexOf('(6,5)->(2,3)') < 0, ls);
   const diag = [t(0, 1), t(3, 4)];
-  check('SW diagonal hit (3 across, 3 up) gets no L',
-        hitPairs(diag, 'SW').length === 1 && knightHitPairs(diag, 'SW').length === 0);
+  check('NE diagonal hit (3 across, 3 up) gets no L',
+        hitPairs(diag, 'NE').length === 1 && knightHitPairs(diag, 'NE').length === 0);
   const col = [t(4, 6), t(4, 4)];
-  check('N hit down a column gets no L', hitPairs(col, 'N').length === 1 && knightHitPairs(col, 'N').length === 0);
+  check('S hit down a column gets no L', hitPairs(col, 'S').length === 1 && knightHitPairs(col, 'S').length === 0);
 })();
 
 (function () {

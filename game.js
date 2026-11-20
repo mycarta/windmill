@@ -294,7 +294,7 @@ function setTurnLine(first, second) {
 
 function turnLine() {
   const n = Math.max(turbines.length, 1);
-  return [`Turn ${n} of ${setting}`, current ? `Wind from ${current.dir}` : ''];
+  return [`Turn ${n} of ${setting}`, current ? `Wind blows ${current.dir}` : ''];
 }
 
 function renderRecord() {
@@ -320,7 +320,7 @@ function renderRecord() {
 }
 
 function updateRuleText() {
-  const text = `In this game, the wind blows only from the ${setting} directions on the compass.`;
+  const text = `In this game, the wind blows only in the ${setting} directions on the compass.`;
   $('rule-line').textContent = text;
   $('htp-rule').textContent = text;
   $('compass-caption').textContent = `${setting} directions`;
@@ -491,7 +491,7 @@ function showFrame(i) {
     const active = dir === f.dir;
     return { active, used: !active && DIRECTIONS_16.indexOf(dir) < k, added, tappable: false };
   });
-  setTurnLine('Replay with 16 directions', `Wind from ${f.dir} · ${k + 1} of 16`);
+  setTurnLine('Replay with 16 directions', `Wind blows ${f.dir} · ${k + 1} of 16`);
   setStatus(hitText(f.hits.length));
 }
 

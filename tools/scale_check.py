@@ -62,9 +62,9 @@ def power_loss(along_d, perp_d, k):
 
 
 def geometry(offset, direction):
-    """(along, perp) of B = A + offset for a wind FROM direction, in cells (same as wake.js)."""
+    """(along, perp) of B = A + offset for a wind blowing toward direction, in cells (same as wake.js)."""
     t = math.radians(DIRS_16.index(direction) * 22.5)
-    ux, uy = -math.sin(t), -math.cos(t)
+    ux, uy = math.sin(t), math.cos(t)
     return offset[0] * ux + offset[1] * uy, abs(offset[0] * uy - offset[1] * ux)
 
 

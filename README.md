@@ -3,11 +3,11 @@
 A free, offline, no-ads browser game about wind turbines and their wakes, and a
 companion to [Dandelions](https://mycarta.github.io/Dandelions/).
 
-Place turbines on a 9×9 board. After each one, the wind blows from a compass
+Place turbines on a 9×9 board. After each one, the wind blows in a compass
 direction, and every turbine casts a wake downwind. A turbine sitting in another
 turbine's wake is hit. There is no winner and no score. The point is to see
-which placements get hit when the wind can blow from **8 directions**, and which
-when it can blow from **16**.
+which placements get hit when the wind can blow in **8 directions**, and which
+when it can blow in **16**.
 
 Windmill is a teaching tool for the YouTube playlist *Demystifying Offshore
 Wind* (coming soon), and it is meant to be playable on its own by anyone.
@@ -22,10 +22,10 @@ and tap "Add to Home Screen". It works offline after that.
 ## How to play
 
 1. Choose **8 directions** or **16 directions**. In this game, the wind blows
-   only from the directions on the compass. That is a rule of the game, not a
+   only in the directions on the compass. That is a rule of the game, not a
    claim about real wind.
 2. Tap an empty square to place a turbine.
-3. The wind blows from one direction on the compass, picked at random. Each
+3. The wind blows in one direction on the compass, picked at random. Each
    direction blows once. Every turbine casts a wake (the pale streaks), and any
    turbine inside a wake gets a red border. The wake passes with the gust, but
    the lost output stays: a turbine that has been hit changes colour.
@@ -46,11 +46,12 @@ The replay changes nothing in the game.
 ## The wake rule
 
 Cell (0,0) is the south-west corner; x grows east, y grows north. Turbines sit
-on cell centres. A direction is named for where the wind **comes from**: a N
-wind blows toward the south.
+on cell centres. A direction is named for where the wind **blows toward**, as in
+Dandelions: a N wind blows north, and its wakes stream north. (Weather reports
+and wind roses name winds the other way, for where they come from.)
 
-For a wind from compass bearing θ (0 = N, clockwise), the downwind unit vector is
-`u = (−sin θ, −cos θ)`. For turbines A and B, let `d = B − A`,
+For a wind blowing toward compass bearing θ (0 = N, clockwise), the downwind unit
+vector is `u = (sin θ, cos θ)`. For turbines A and B, let `d = B − A`,
 `along = d · u` and `perp = |d_x u_y − d_y u_x|`. B is hit by A if
 
     0 < along ≤ WAKE_LENGTH   and   perp ≤ WAKE_HALF_WIDTH

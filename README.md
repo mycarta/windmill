@@ -28,13 +28,13 @@ and tap "Add to Home Screen". It works offline after that.
 3. The wind blows from one direction on the compass, picked at random. Each
    direction blows once. Every turbine casts a wake (the pale streaks), and any
    turbine inside a wake gets a red border. The wake passes with the gust, but
-   the lost output stays: a turbine that has been hit turns rose.
+   the lost output stays: a turbine that has been hit changes colour.
 4. The game ends when every direction has blown. The record under the compass
    lists which turbines each gust hit.
 
 With 8 directions, **Replay with 16 directions** takes the turbines on the board
 and blows all 16 directions over them, one at a time, with **Pause / Play** and
-**Step**. Each gust shows its wakes and red borders, and turbines turn rose as
+**Step**. Each gust shows its wakes and red borders, and turbines change colour as
 they are hit. At the end, two counts compare the 8 original directions with
 all 16:
 

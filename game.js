@@ -122,7 +122,7 @@ function buildGrid() {
   svg.appendChild(axes);
 }
 
-// lost: the turbine has been hit at least once, so it has lost output (rose).
+// lost: the turbine has been hit at least once, so it has lost output (vermilion).
 function turbineSymbol(t, fresh, lost) {
   const [cx, cy] = centre(t);
   const g = svgEl('g', {
@@ -158,7 +158,7 @@ function lPoints(a, b) {
 // Draw the board.
 // view: {gust, hits, pair, lost, freshGust, freshTurbine, freshLine}
 //   hits: turbines in the current gust's wakes (red border, "Hit now")
-//   lost: Set of turbine indices that have lost output so far (rose)
+//   lost: Set of turbine indices that have lost output so far (vermilion)
 function drawBoard(view = {}) {
   const occupied = new Map(turbines.map((t, i) => [`${t.x}-${t.y}`, i]));
   const lost = view.lost || new Set();
@@ -190,16 +190,6 @@ function drawBoard(view = {}) {
 
   const borders = $('hit-borders');
   borders.innerHTML = '';
-  // End of the replay only: a faint rose border on turbines that lost output.
-  if (view.lostBorders) {
-    for (const i of lost) {
-      const t = turbines[i];
-      borders.appendChild(svgEl('rect', {
-        class: 'lost-border fade-in',
-        x: t.x * CELL + 5, y: (BOARD_N - 1 - t.y) * CELL + 5, width: 90, height: 90, rx: 10,
-      }));
-    }
-  }
   for (const i of view.hits || []) {
     const t = turbines[i];
     borders.appendChild(svgEl('rect', {
@@ -433,7 +423,7 @@ function openReplay() {
   if (setting !== 8 || turbines.length < 2 || inputLocked || awaitingPick || replay) return;
 
   // The replay is its own experiment: every turbine starts with no lost
-  // output and turns rose the first time a replay gust hits it.
+  // output and turns vermilion the first time a replay gust hits it.
   const frames = [];
   const lostSoFar = new Set();
   for (const dir of DIRECTIONS_16) {
@@ -478,9 +468,11 @@ function showFrame(i) {
   if (f.final) {
     replay.playing = false;
     clearTimeout(replay.timer);
-    // No gust now, so no red borders: lost output, with a faint rose border.
-    drawBoard({ lost: new Set(replay.hit16), lostBorders: true });
-    paintCompass(dir => ({ active: false, used: true, added: !DIRECTIONS_8.includes(dir), tappable: false }));
+    // No gust now, so no borders: only the colour of lost output.
+    drawBoard({ lost: new Set(replay.hit16) });
+    // The compass becomes a key for the two counts: the 8 directions pale,
+    // the added 8 periwinkle, none gold (no gust is blowing).
+    paintCompass(dir => ({ active: false, used: false, added: !DIRECTIONS_8.includes(dir), tappable: false }));
     setTurnLineParts('Replay with 16 directions', '');
     setStatus('');
     setSummary('summary-8',  'Hit by at least one of the 8 directions:',  `${replay.hit8} of ${n} turbines`);

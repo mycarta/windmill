@@ -1,6 +1,6 @@
 // WINDMILL — service worker.
 // Cache convention (from Dandelions): bump CACHE by hand whenever ANY cached
-// file changes, e.g. 'windmill-v1' -> 'windmill-v3'. Otherwise phones that
+// file changes, e.g. 'windmill-v1' -> 'windmill-v2'. Otherwise phones that
 // installed the app keep serving the old files.
 const CACHE = 'windmill-v4';
 

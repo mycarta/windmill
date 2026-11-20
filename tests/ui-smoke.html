@@ -122,6 +122,7 @@ async function run() {
   check('Close: compass back to 8', count('#compass .dir-group') === 8);
   check('Close: game unchanged (record, turn line, status)',
         recordLines().length === 2 && text('turn-line') === turnBefore && text('status') === statusBefore);
+  check('Close: game legend back', text('legend') === 'Wind nowStill to comeUsed', text('legend'));
   check('Close: game buttons back', !$('game-buttons').hidden && !$('record').hidden);
   check('Close: lost output back to the game\'s own', lostAt(4, 6) && !lostAt(4, 4));
 
@@ -148,6 +149,8 @@ async function run() {
         frames + ' frames, ' + eneFrames + ' ENE, ' + lCount + ' Ls');
   check('end: 0 of 5 for 8 directions', text('summary-8') === 'Hit by at least one of the 8 directions: 0 of 5 turbines', text('summary-8'));
   check('end: 5 of 5 for 16 directions', text('summary-16') === 'Hit by at least one of the 16 directions: 5 of 5 turbines', text('summary-16'));
+  check('end: legend shows only the two families', count('#legend .legend-item') === 2
+        && text('legend') === '8 directionsAdded in 16 directions', text('legend'));
   check('end: compass lit as a key, 8 pale + 8 periwinkle, none used or gold',
         d.querySelectorAll('#compass text.used, #compass text.active').length === 0
         && d.querySelectorAll('#compass text.added').length === 8);

@@ -472,6 +472,7 @@ function showFrame(i) {
     // The compass becomes a key for the two counts: the 8 directions pale,
     // the added 8 periwinkle, none gold (no gust is blowing).
     paintCompass(dir => ({ active: false, used: false, added: !DIRECTIONS_8.includes(dir), tappable: false }));
+    renderLegend([[COLOR.pale, '8 directions'], [COLOR.added, 'Added in 16 directions']]);
     setTurnLine('Replay with 16 directions', '');
     setStatus('');
     setSummary('summary-8',  'Hit by at least one of the 8 directions:',  `${replay.hit8} of ${n} turbines`);

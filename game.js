@@ -278,11 +278,10 @@ function canPlace() {
 }
 
 function setStatus(msg) { $('status').textContent = msg; }
-function setTurnLine(msg) { $('turn-line').textContent = msg; }
-
-// The replay header always takes two lines, so the board does not move while
-// the replay plays. An empty second line keeps its height (no-break space).
-function setTurnLineParts(first, second) {
+// The header under the title always takes two lines, in the game and in the
+// replay, so the board never moves: where you are, then the wind. An empty
+// second line keeps its height (no-break space).
+function setTurnLine(first, second) {
   const el = $('turn-line');
   el.innerHTML = '';
   for (const part of [first, second || '\u00a0']) {
@@ -295,7 +294,7 @@ function setTurnLineParts(first, second) {
 
 function turnLine() {
   const n = Math.max(turbines.length, 1);
-  return current ? `Turn ${n} of ${setting} · Wind from ${current.dir}` : `Turn ${n} of ${setting}`;
+  return [`Turn ${n} of ${setting}`, current ? `Wind from ${current.dir}` : ''];
 }
 
 function renderRecord() {
@@ -350,7 +349,7 @@ function renderGame(view = {}) {
   paintGameCompass();
   renderLegend([[COLOR.now, 'Wind now'], [COLOR.pale, 'Still to come'], [COLOR.used, 'Used']]);
   renderRecord();
-  setTurnLine(turnLine());
+  setTurnLine(...turnLine());
   updateButtons();
 }
 
@@ -441,7 +440,7 @@ function openReplay() {
     index: -1,
     playing: true,
     timer: null,
-    saved: { turn: $('turn-line').textContent, status: $('status').textContent },
+    saved: { status: $('status').textContent },
     hit8: hitByAny(turbines, DIRECTIONS_8).length,
     hit16: hitByAny(turbines, DIRECTIONS_16),
   };
@@ -473,7 +472,7 @@ function showFrame(i) {
     // The compass becomes a key for the two counts: the 8 directions pale,
     // the added 8 periwinkle, none gold (no gust is blowing).
     paintCompass(dir => ({ active: false, used: false, added: !DIRECTIONS_8.includes(dir), tappable: false }));
-    setTurnLineParts('Replay with 16 directions', '');
+    setTurnLine('Replay with 16 directions', '');
     setStatus('');
     setSummary('summary-8',  'Hit by at least one of the 8 directions:',  `${replay.hit8} of ${n} turbines`);
     setSummary('summary-16', 'Hit by at least one of the 16 directions:', `${replay.hit16.length} of ${n} turbines`);
@@ -491,7 +490,7 @@ function showFrame(i) {
     const active = dir === f.dir;
     return { active, used: !active && DIRECTIONS_16.indexOf(dir) < k, added, tappable: false };
   });
-  setTurnLineParts('Replay with 16 directions', `Wind from ${f.dir} · ${k + 1} of 16`);
+  setTurnLine('Replay with 16 directions', `Wind from ${f.dir} · ${k + 1} of 16`);
   setStatus(hitText(f.hits.length));
 }
 
@@ -546,7 +545,7 @@ function closeReplay() {
   ['compass-caption', 'rule-line', 'record', 'game-buttons'].forEach(id => { $(id).hidden = false; });
   buildCompass(setting);
   renderGame();
-  setTurnLine(saved.turn);
+  setTurnLine(...turnLine());
   setStatus(saved.status);
 }
 

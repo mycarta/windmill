@@ -47,6 +47,8 @@ async function run() {
   const count = sel => d.querySelectorAll(sel).length;
   const text = id => $(id).textContent.trim();
   const recordLines = () => [...d.querySelectorAll('#record li')].map(li => li.textContent);
+  const headerLines = () => [...d.querySelectorAll('#turn-line .line')].map(e => e.textContent.trim());
+  const boardTop = () => Math.round($('grid').getBoundingClientRect().top);
 
   lines.push('-- start (tap-to-pick mode)');
   check('title is Windmill', d.title === 'Windmill', d.title);
@@ -66,7 +68,7 @@ async function run() {
   cell(5, 5);
   check('no second turbine before the gust', count('#turbines .turbine-symbol') === 1);
   pick('N');
-  check('turn line shows the wind', text('turn-line') === 'Turn 1 of 8 · Wind from N', text('turn-line'));
+  check('header shows the wind on its second line', headerLines().join(' / ') === 'Turn 1 of 8 / Wind from N', headerLines().join(' / '));
   check('first gust: no hits', text('status') === 'No turbines hit. Tap a square for the next turbine.', text('status'));
   check('first gust still draws its wake', count('#wakes .wake') === 1);
   check('record: "N — none"', recordLines()[0] === 'N — none', recordLines()[0]);
@@ -91,13 +93,13 @@ async function run() {
   check('board legend: Hit now / Lost output', text('board-legend').replace(/\s+/g, ' ') === 'Hit now Lost output', text('board-legend'));
 
   lines.push('-- replay with 16 directions (2 turbines in a column)');
-  const turnBefore = text('turn-line'), statusBefore = text('status');
+  const turnBefore = text('turn-line'), statusBefore = text('status'), topBefore = boardTop();
   click($('replay-btn'));
+  check('board does not move when the replay opens', boardTop() === topBefore, topBefore + ' -> ' + boardTop());
   check('replay compass has 16 directions', count('#compass .dir-group') === 16);
   check('replay legend has 4 items', count('#legend .legend-item') === 4, text('legend'));
   check('game controls hidden in replay', $('game-buttons').hidden && $('record').hidden && $('rule-line').hidden);
   check('setting toggle disabled in replay', [...d.querySelectorAll('.set-btn')].every(b => b.disabled));
-  const headerLines = () => [...d.querySelectorAll('#turn-line .line')].map(e => e.textContent.trim());
   check('replay starts at N, with no L (public replay)', headerLines().join(' / ') === 'Replay with 16 directions / Wind from N · 1 of 16'
         && count('#l-lines .l-line') === 0, headerLines().join(' / '));
   check('added directions are periwinkle', $('dir-NNE').querySelector('text').classList.contains('added'));
@@ -110,11 +112,13 @@ async function run() {
   for (let i = 0; i < 15; i++) click($('step-btn'));
   check('end: counts for 8', text('summary-8') === 'Hit by at least one of the 8 directions: 2 of 2 turbines', text('summary-8'));
   check('end: counts for 16', text('summary-16') === 'Hit by at least one of the 16 directions: 2 of 2 turbines', text('summary-16'));
+  check('board does not move at the end of the replay', boardTop() === topBefore, topBefore + ' -> ' + boardTop());
   check('end: header keeps two lines, the second empty', headerLines().join(' / ') === 'Replay with 16 directions / ',
         headerLines().join(' / '));
   check('end: only Close remains', $('pause-btn').hidden && $('step-btn').hidden && !$('close-btn').hidden);
   check('end: both turbines lost output, no borders', lostAt(4, 4) && lostAt(4, 6) && count('#hit-borders .hit-border') === 0);
   click($('close-btn'));
+  check('board does not move when the replay closes', boardTop() === topBefore, topBefore + ' -> ' + boardTop());
   check('Close: compass back to 8', count('#compass .dir-group') === 8);
   check('Close: game unchanged (record, turn line, status)',
         recordLines().length === 2 && text('turn-line') === turnBefore && text('status') === statusBefore);

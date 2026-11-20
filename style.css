@@ -207,7 +207,9 @@ main {
   font-size: clamp(0.9rem, 3.8vw, 1.05rem);
   color: #d4e0ed;
   text-align: center;
-  min-height: 1.5em;
+  /* Always room for two lines, so the compass below never moves on a phone */
+  line-height: 1.35;
+  min-height: 2.7em;
   letter-spacing: 0.02em;
   padding: 0 8px;
 }

@@ -17,6 +17,8 @@ const KNIGHT_LINES = PARAMS.get('lines') === 'knight';
 
 const GUST_DELAY_MS   = 500;    // pause between placing a turbine and the gust
 const REPLAY_FRAME_MS = 1200;   // each replay frame (a gust, or one L within it)
+const PLAY_ALL_MS     = 1500;   // Play mode: each wind, when "Play all" runs
+const PLAY_TURBINES   = 8;      // Play mode: turbines to place, with 8 or 16 winds
 const CELL = 100;               // board units per cell
 const BOARD_N = 9;
 
@@ -54,6 +56,8 @@ let record;               // [{dir, hit: [{x, y}]}]
 let current;              // the gust on show: {dir, hits: [index]} or null
 let gameOver, inputLocked, awaitingPick, gustTimer;
 let replay = null;        // replay state while the replay is open
+let mode = 'play';        // 'play' or 'learn'
+let play = null;          // Play mode state: {phase, dirs, index, lost, playing, timer, review}
 
 function initState() {
   clearTimeout(gustTimer);
@@ -64,6 +68,9 @@ function initState() {
   gameOver = false;
   inputLocked = false;
   awaitingPick = false;
+  if (play) clearTimeout(play.timer);
+  play = { phase: 'place', dirs: playOrder(), index: -1, lost: new Set(),
+           playing: false, timer: null, review: null };
 }
 
 // ── Build the board ──────────────────────────────────────────────────────────
@@ -175,17 +182,18 @@ function drawBoard(view = {}) {
 
   const wakes = $('wakes');
   wakes.innerHTML = '';
-  if (view.gust) {
-    const [ux, uy] = downwindVector(view.gust);
+  // view.wakeList: [{t, dir}] draws only those wakes (Play review);
+  // otherwise view.gust draws every turbine's wake for that wind.
+  const wakeList = view.wakeList || (view.gust ? turbines.map(t => ({ t, dir: view.gust })) : []);
+  for (const { t, dir } of wakeList) {
+    const [ux, uy] = downwindVector(dir);
     const angle = Math.atan2(-uy, ux) * 180 / Math.PI;   // SVG y points down
-    for (const t of turbines) {
-      const [cx, cy] = centre(t);
-      wakes.appendChild(svgEl('rect', {
-        class: 'wake' + (view.freshGust ? ' fade-in' : ''),
-        x: 0, y: -WAKE_HALF_WIDTH * CELL, width: WAKE_LENGTH * CELL, height: 2 * WAKE_HALF_WIDTH * CELL,
-        transform: `translate(${cx}, ${cy}) rotate(${angle.toFixed(3)})`,
-      }));
-    }
+    const [cx, cy] = centre(t);
+    wakes.appendChild(svgEl('rect', {
+      class: 'wake' + (view.freshGust ? ' fade-in' : ''),
+      x: 0, y: -WAKE_HALF_WIDTH * CELL, width: WAKE_LENGTH * CELL, height: 2 * WAKE_HALF_WIDTH * CELL,
+      transform: `translate(${cx}, ${cy}) rotate(${angle.toFixed(3)})`,
+    }));
   }
 
   const borders = $('hit-borders');
@@ -195,6 +203,13 @@ function drawBoard(view = {}) {
     borders.appendChild(svgEl('rect', {
       class: 'hit-border' + (view.freshGust ? ' fade-in' : ''),
       x: t.x * CELL + 5, y: (BOARD_N - 1 - t.y) * CELL + 5, width: 90, height: 90, rx: 10,
+    }));
+  }
+  if (view.selected !== undefined) {
+    const t = turbines[view.selected];
+    borders.appendChild(svgEl('rect', {
+      class: 'select-border',
+      x: t.x * CELL + 3, y: (BOARD_N - 1 - t.y) * CELL + 3, width: 94, height: 94, rx: 12,
     }));
   }
 
@@ -274,6 +289,7 @@ function renderLegend(items) {
 // ── Game rendering ───────────────────────────────────────────────────────────
 
 function canPlace() {
+  if (mode === 'play') return play.phase === 'place' && turbines.length < PLAY_TURBINES;
   return !replay && !gameOver && !inputLocked && !awaitingPick && turbines.length < setting;
 }
 
@@ -328,7 +344,7 @@ function updateRuleText() {
 
 function updateButtons() {
   const btn = $('replay-btn');
-  btn.hidden = setting !== 8;
+  btn.hidden = mode !== 'learn' || setting !== 8;
   btn.disabled = !(setting === 8 && turbines.length >= 2 && !inputLocked && !awaitingPick);
   document.querySelectorAll('.set-btn').forEach(b => {
     b.classList.toggle('active', Number(b.dataset.setting) === setting);
@@ -350,12 +366,14 @@ function renderGame(view = {}) {
   renderLegend([[COLOR.now, 'Wind now'], [COLOR.pale, 'Still to come'], [COLOR.used, 'Used']]);
   renderRecord();
   setTurnLine(...turnLine());
+  $('reset-btn').textContent = 'Reset';
   updateButtons();
 }
 
 // ── Turns ────────────────────────────────────────────────────────────────────
 
 function handleCellClick(x, y) {
+  if (mode === 'play') { playCellClick(x, y); return; }
   if (!canPlace()) return;
   if (turbines.some(t => t.x === x && t.y === y)) return;
 
@@ -378,6 +396,7 @@ function handleCellClick(x, y) {
 }
 
 function handleCompassClick(dir) {
+  if (mode === 'play') { playCompassClick(dir); return; }
   if (replay || !PICK_MODE || !awaitingPick || usedDirs.includes(dir)) return;
   blow(dir);
 }
@@ -406,14 +425,187 @@ function resetGame() {
   initState();
   buildCompass(setting);
   updateRuleText();
+  applyMode();
+  if (mode === 'play') { renderPlay(); return; }
   renderGame();
   setStatus('Tap a square to place a turbine');
+}
+
+function chooseMode(m) {
+  if (m === mode) return;
+  mode = m;
+  resetGame();
+}
+
+// Show the controls of the current mode; hide the other's.
+function applyMode() {
+  document.querySelectorAll('.mode-tab').forEach(b => {
+    const on = b.dataset.mode === mode;
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-selected', String(on));
+  });
+  const learn = mode === 'learn';
+  $('game-buttons').hidden = false;
+  $('replay-btn').hidden = !learn || setting !== 8;
+  $('record').hidden = false;
+  $('play-controls').hidden = learn;
 }
 
 function chooseSetting(n) {
   if (replay || n === setting) return;
   setting = n;
   resetGame();
+}
+
+// ── Play mode ────────────────────────────────────────────────────────────────
+// Place all 8 turbines, then the winds of the setting blow over the finished
+// layout, one at a time, at the player's pace. The verdict counts turbines hit
+// by at least one wind. At the end the player can review: tap a direction to
+// see that wind again, tap a turbine to see which winds hit it.
+// Wording here is provisional, pending Matteo's approval.
+
+// The order the winds blow in Play. It never changes the verdict, only what the
+// player sees on the way. With 16 winds each game picks one of two orders at
+// random: round the compass from N, or the 8 main directions first and then
+// the 8 added ones (an 8-wind layout survives the first half, then breaks).
+function playOrder() {
+  if (setting === 8 || Math.random() < 0.5) return directionsFor(setting);
+  return [...DIRECTIONS_8, ...DIRECTIONS_16.filter(d => !DIRECTIONS_8.includes(d))];
+}
+
+function playAcceptable() { return setting === 8 ? 0 : Math.floor(PLAY_TURBINES / 2); }
+// Fewest turbines any layout of 8 can lose on 9×9: 8 winds can always be
+// survived; with 16 winds, 3 is the best possible (checked exhaustively).
+function playBest() { return setting === 8 ? 0 : 3; }
+
+function playCellClick(x, y) {
+  const i = turbines.findIndex(t => t.x === x && t.y === y);
+  if (play.phase === 'place') {
+    if (i >= 0) turbines.splice(i, 1);                       // tap a turbine to remove it
+    else if (turbines.length < PLAY_TURBINES) turbines.push({ x, y, rot: Math.round(Math.random() * 80 - 40) });
+    else return;
+    renderPlay(i >= 0 ? {} : { freshTurbine: turbines.length - 1 });
+  } else if (play.phase === 'done') {
+    play.review = i >= 0 && !(play.review && play.review.turbine === i) ? { turbine: i } : null;
+    renderPlay();
+  }
+}
+
+function playCompassClick(dir) {
+  if (play.phase !== 'done') return;
+  play.review = play.review && play.review.dir === dir ? null : { dir };
+  renderPlay({ freshGust: !!play.review });
+}
+
+function startWind() {
+  if (play.phase !== 'place' || turbines.length < PLAY_TURBINES) return;
+  play.phase = 'reveal';
+  record = [];
+  nextWind();
+}
+
+function nextWind() {
+  if (play.phase !== 'reveal') return;
+  play.index++;
+  if (play.index >= play.dirs.length) { finishPlay(); return; }
+  const dir = play.dirs[play.index];
+  const hits = hitsForGust(turbines, dir);
+  hits.forEach(i => play.lost.add(i));
+  record.push({ dir, hit: hits.map(i => turbines[i]).slice().sort((p, q) => p.x - q.x || p.y - q.y) });
+  renderPlay({ freshGust: true });
+}
+
+function finishPlay() {
+  play.phase = 'done';
+  play.playing = false;
+  clearTimeout(play.timer);
+  renderPlay();
+}
+
+function togglePlayAll() {
+  if (play.phase !== 'reveal') return;
+  play.playing = !play.playing;
+  const tick = () => {
+    if (!play.playing || play.phase !== 'reveal') return;
+    nextWind();
+    if (play.phase === 'reveal') play.timer = setTimeout(tick, PLAY_ALL_MS);
+  };
+  clearTimeout(play.timer);
+  if (play.playing) tick();
+  else renderPlay();
+}
+
+function renderPlay(view = {}) {
+  const n = turbines.length;
+  const dirs = play.dirs;
+  let board = { lost: play.lost, freshTurbine: view.freshTurbine };
+  let line1, line2, status;
+  const k = play.index;
+
+  if (play.phase === 'place') {
+    line1 = n === 0 ? 'None placed yet' : n < PLAY_TURBINES ? `${n} of ${PLAY_TURBINES} placed` : `All ${PLAY_TURBINES} turbines placed`;
+    line2 = n < PLAY_TURBINES ? `Place all ${PLAY_TURBINES}, then the wind blows` : `Then ${setting} winds will blow`;
+    status = n === 0 ? 'Tap a square to place a turbine.'
+      : n < PLAY_TURBINES ? 'Tap a square to place a turbine, or a turbine to remove it.'
+      : 'Tap a turbine to move it, or let the wind blow.';
+  } else if (play.phase === 'reveal') {
+    const dir = dirs[k];
+    const hits = record[k].hit.map(h => turbines.indexOf(h));
+    board = Object.assign(board, { gust: dir, hits, freshGust: view.freshGust });
+    line1 = `Wind ${k + 1} of ${dirs.length}`;
+    line2 = `Wind blows ${dir}`;
+    status = hitText(hits.length);
+  } else {
+    const lostN = play.lost.size, ok = lostN <= playAcceptable(), best = lostN <= playBest();
+    line1 = `Lost output: ${lostN} of ${n} turbines`;
+    line2 = setting === 8 ? 'Acceptable: none' : 'Acceptable: half or fewer';
+    status = (best ? 'The best possible result. ' : ok ? 'Within the acceptable loss. ' : 'More than the acceptable loss. ') +
+             'Tap a direction or a turbine to look again.';
+    const r = play.review;
+    if (r && r.dir) {
+      const hits = hitsForGust(turbines, r.dir);
+      board = Object.assign(board, { gust: r.dir, hits, freshGust: view.freshGust });
+      status = `Wind blows ${r.dir}: ${hitText(hits.length).toLowerCase()}`;
+    } else if (r && r.turbine !== undefined) {
+      const by = dirs.filter(d => hitsForGust(turbines, d).includes(r.turbine));
+      const wl = [];
+      for (const d of by) for (const p of hitPairs(turbines, d)) if (p.to === r.turbine) wl.push({ t: turbines[p.from], dir: d });
+      board = Object.assign(board, { wakeList: wl, selected: r.turbine });
+      status = by.length ? `${coord(turbines[r.turbine])} was hit by ${by.join(', ')}.` : `${coord(turbines[r.turbine])} was never hit.`;
+    }
+  }
+
+  drawBoard(board);
+  const reviewDirs = play.review && play.review.turbine !== undefined
+    ? dirs.filter(d => hitsForGust(turbines, d).includes(play.review.turbine)) : [];
+  // Main winds first: the added directions show periwinkle, as in the replay
+  const mainFirst = dirs.length === 16 && dirs[1] === 'NE';
+  paintCompass(dir => {
+    if (play.phase === 'place') return { active: false, used: false, added: false, tappable: false };
+    if (play.phase === 'reveal') {
+      const j = dirs.indexOf(dir);
+      return { active: j === k, used: j < k, added: mainFirst && !DIRECTIONS_8.includes(dir), tappable: false };
+    }
+    const active = (play.review && play.review.dir === dir) || reviewDirs.includes(dir);
+    return { active, used: false, added: false, tappable: true };
+  });
+  renderLegend(play.phase === 'done'
+    ? [[COLOR.now, 'Shown now'], [COLOR.pale, 'Tap to look again']]
+    : play.phase === 'reveal' && mainFirst
+    ? [[COLOR.now, 'Wind now'], [COLOR.pale, '8 directions'], [COLOR.added, 'Added in 16 directions'], [COLOR.used, 'Used']]
+    : [[COLOR.now, 'Wind now'], [COLOR.pale, 'Still to come'], [COLOR.used, 'Used']]);
+  renderRecord();
+  setTurnLine(line1, line2);
+  setStatus(status);
+
+  $('start-btn').hidden = play.phase !== 'place';
+  $('start-btn').disabled = n < PLAY_TURBINES;
+  $('next-btn').hidden = play.phase !== 'reveal';
+  $('all-btn').hidden = play.phase !== 'reveal';
+  $('all-btn').textContent = play.playing ? 'Pause' : 'Play all';
+  $('next-btn').disabled = play.playing;
+  $('reset-btn').textContent = play.phase === 'done' ? 'New game' : 'Reset';
+  updateButtons();
 }
 
 // ── Replay with 16 directions ────────────────────────────────────────────────
@@ -557,6 +749,12 @@ document.addEventListener('DOMContentLoaded', () => {
   resetGame();
 
   $('reset-btn').addEventListener('click', resetGame);
+  $('start-btn').addEventListener('click', startWind);
+  $('next-btn').addEventListener('click', () => { if (!play.playing) nextWind(); });
+  $('all-btn').addEventListener('click', togglePlayAll);
+  document.querySelectorAll('.mode-tab').forEach(btn => {
+    btn.addEventListener('click', () => chooseMode(btn.dataset.mode));
+  });
   $('replay-btn').addEventListener('click', openReplay);
   $('pause-btn').addEventListener('click', togglePause);
   $('step-btn').addEventListener('click', stepReplay);

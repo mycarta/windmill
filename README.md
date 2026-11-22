@@ -3,11 +3,12 @@
 A free, offline, no-ads browser game about wind turbines and their wakes, and a
 companion to [Dandelions](https://mycarta.github.io/Dandelions/).
 
-Place turbines on a 9×9 board. After each one, the wind blows in a compass
-direction, and every turbine casts a wake downwind. A turbine sitting in another
-turbine's wake is hit. There is no winner and no score. The point is to see
-which placements get hit when the wind can blow in **8 directions**, and which
-when it can blow in **16**.
+It has two modes. **Play** is a puzzle: place 8 turbines on a 9×9 board, then
+the wind blows from every direction on the compass, one at a time, and you see
+how many turbines lost output. **Learn** shows wakes one gust at a time: after
+each turbine, the wind blows in one direction, and you see which placements get
+hit when the wind can blow in **8 directions**, and which when it can blow in
+**16**.
 
 Windmill is a teaching tool for the YouTube playlist *Demystifying Offshore
 Wind* (coming soon), and it is meant to be playable on its own by anyone.
@@ -21,15 +22,34 @@ and tap "Add to Home Screen". It works offline after that.
 
 ## How to play
 
-1. Choose **8 directions** or **16 directions**. In this game, the wind blows
-   only in the directions on the compass. That is a rule of the game, not a
-   claim about real wind.
-2. Tap an empty square to place a turbine.
-3. The wind blows in one direction on the compass, picked at random. Each
-   direction blows once. Every turbine casts a wake (the pale streaks), and any
-   turbine inside a wake gets a red border. The wake passes with the gust, but
-   the lost output stays: a turbine that has been hit changes colour.
-4. The game ends when every direction has blown. The record under the compass
+In both modes, choose **8 directions** or **16 directions**. In this game, the
+wind blows only in the directions on the compass. That is a rule of the game,
+not a claim about real wind.
+
+### Play
+
+1. Tap empty squares to place 8 turbines. Tap a turbine to take it back.
+2. Tap **Let the wind blow**. Each wind blows over your layout in turn. Tap
+   **Next wind** to move on, or **Play all** to watch them all.
+3. Every turbine casts a wake (the pale streaks), and any turbine inside a
+   wake gets a red border and changes colour: it has lost output.
+4. At the end, count the turbines that lost output. With 8 winds, a layout can
+   keep them all. With 16 winds, losing half or fewer is acceptable.
+5. Tap a direction on the compass to see that wind again, or tap a turbine to
+   see which winds hit it.
+
+With 16 winds, each game blows the winds either round the compass from N, or the
+8 main directions first and then the 8 added ones (shown in periwinkle). The
+order never changes the result.
+
+### Learn
+
+1. Tap an empty square to place a turbine.
+2. The wind blows in one direction on the compass, picked at random. Each
+   direction blows once. Every turbine casts a wake, and any turbine inside a
+   wake gets a red border. The wake passes with the gust, but the lost output
+   stays: a turbine that has been hit changes colour.
+3. The game ends when every direction has blown. The record under the compass
    lists which turbines each gust hit.
 
 With 8 directions, **Replay with 16 directions** takes the turbines on the board
@@ -131,12 +151,12 @@ in the opposite one. The reasoning is in [DECISIONS.md](DECISIONS.md).
 |---|---|
 | `index.html`, `style.css` | The page and its layout |
 | `wake.js` | The wake rule: no screen code, shared by the game and the tests |
-| `game.js` | Board, compass, turns, record and replay |
+| `game.js` | Board, compass, Play and Learn modes, record and replay |
 | `manifest.json`, `sw.js`, `icon-*.png` | Installable offline app |
 | `generate-icons.html` | Draws the app icons |
 | `tests/` | Wake-rule tests and the UI smoke test |
 | `tools/scale_check.py` | The physical-scale check above |
-| `PROPOSAL.md`, `DECISIONS.md`, `proposal/` | How the design was proposed and decided |
+| `PROPOSAL.md`, `PLAY_PROPOSAL.md`, `DECISIONS.md`, `proposal/` | How the design was proposed and decided |
 
 **Updating the offline app:** whenever any cached file changes, bump `CACHE` in
 `sw.js` (`windmill-v1` → `windmill-v2` …). Otherwise phones that installed the

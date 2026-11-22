@@ -19,6 +19,7 @@
 <iframe id="pick" title="game, tap-to-pick mode"></iframe>
 <iframe id="rand" title="game, random wind"></iframe>
 <iframe id="lines" title="game, tap-to-pick with knight lines"></iframe>
+<iframe id="play" title="game, Play mode"></iframe>
 <script>
 const lines = [];
 let passed = 0, failed = 0;
@@ -49,6 +50,13 @@ async function run() {
   const recordLines = () => [...d.querySelectorAll('#record li')].map(li => li.textContent);
   const headerLines = () => [...d.querySelectorAll('#turn-line .line')].map(e => e.textContent.trim());
   const boardTop = () => Math.round($('grid').getBoundingClientRect().top);
+
+  lines.push('-- modes');
+  check('Play opens first', d.querySelector('.mode-tab.active').dataset.mode === 'play'
+        && !$('play-controls').hidden && $('replay-btn').hidden);
+  click(d.querySelector('.mode-tab[data-mode="learn"]'));
+  check('Learn tab shows the Learn game', d.querySelector('.mode-tab.active').dataset.mode === 'learn'
+        && $('play-controls').hidden);
 
   lines.push('-- start (tap-to-pick mode)');
   check('title is Windmill', d.title === 'Windmill', d.title);
@@ -184,6 +192,7 @@ async function run() {
   const kclick = el => el.dispatchEvent(new k.MouseEvent('click', { bubbles: true }));
   const ktext = id => k$(id).textContent.trim();
   const kcount = sel => kd.querySelectorAll(sel).length;
+  kclick(kd.querySelector('.mode-tab[data-mode="learn"]'));
   const kplace = (x, y, dir) => { kclick(k$(`cell-${x}-${y}`)); kclick(k$(`dir-${dir}`)); };
   // Walk the replay; returns {dir: [frames, Ls, borders]} per gust.
   const walk = () => {
@@ -219,6 +228,7 @@ async function run() {
   await sleep(100);
   const rd = r.document;
   const rclick = el => el.dispatchEvent(new r.MouseEvent('click', { bubbles: true }));
+  rclick(rd.querySelector('.mode-tab[data-mode="learn"]'));
   rclick(rd.getElementById('cell-1-1'));
   check('compass not tappable in normal mode', rd.querySelectorAll('#compass .dir-group.tappable').length === 0);
   check('status while waiting', rd.getElementById('status').textContent === 'The wind is blowing…');
@@ -229,6 +239,92 @@ async function run() {
   check('8 gusts, each direction exactly once', dirs.length === 8 && new Set(dirs).size === 8
         && dirs.every(x => ['N','NE','E','SE','S','SW','W','NW'].includes(x)), dirs.join(' '));
   check('random game ends', rd.getElementById('status').textContent.endsWith('All 8 directions have blown.'));
+
+  // ── Play mode: place all 8, then the winds blow in compass order ─────────
+  lines.push('-- Play mode, 8 winds');
+  const p = await load(document.getElementById('play'), '../index.html');
+  await sleep(100);
+  const pd = p.document;
+  const p$ = id => pd.getElementById(id);
+  const pclick = el => el.dispatchEvent(new p.MouseEvent('click', { bubbles: true }));
+  const pcell = (x, y) => pclick(p$(`cell-${x}-${y}`));
+  const ptext = id => p$(id).textContent.trim();
+  const pcount = sel => pd.querySelectorAll(sel).length;
+  const pheader = () => [...pd.querySelectorAll('#turn-line .line')].map(e => e.textContent.trim()).join(' / ');
+  const ptop = () => Math.round(p$('grid').getBoundingClientRect().top);
+  const ctop = () => Math.round(p$('compass').getBoundingClientRect().top);
+  const top0 = ptop(), ctop0 = ctop();
+  const count4 = () => pcount('#legend .legend-item') === 4 && ptext('legend').includes('Added in 16 directions');
+  check('empty board: "None placed yet"', pheader() === 'None placed yet / Place all 8, then the wind blows', pheader());
+  check('start button shown, disabled', !p$('start-btn').hidden && p$('start-btn').disabled
+        && p$('next-btn').hidden && p$('all-btn').hidden);
+  check('no compass direction tappable while placing', pcount('#compass .dir-group.tappable') === 0);
+  pcell(0, 0); pcell(1, 4); pcell(2, 7);
+  check('3 placed: "3 of 8 placed"', pheader().startsWith('3 of 8 placed'), pheader());
+  pcell(1, 4);
+  check('tap a turbine to remove it', pcount('#turbines .turbine-symbol') === 2 && pheader().startsWith('2 of 8 placed'), pheader());
+  // Eight queens: no two share a row, column or diagonal, so 8 winds hit nothing
+  for (const [x, y] of [[1,4],[3,5],[4,2],[5,6],[6,1],[7,3]]) pcell(x, y);
+  check('8 placed: header and start enabled', pheader() === 'All 8 turbines placed / Then 8 winds will blow'
+        && !p$('start-btn').disabled, pheader());
+  pcell(8, 8);
+  check('no ninth turbine', pcount('#turbines .turbine-symbol') === 8);
+  pclick(p$('start-btn'));
+  check('first wind: "Wind 1 of 8 / Wind blows N"', pheader() === 'Wind 1 of 8 / Wind blows N', pheader());
+  check('reveal shows Next wind and Play all', !p$('next-btn').hidden && !p$('all-btn').hidden && p$('start-btn').hidden);
+  check('every turbine casts a wake', pcount('#wakes .wake') === 8);
+  pcell(8, 8);
+  check('no placing during the wind', pcount('#turbines .turbine-symbol') === 8);
+  pclick(p$('all-btn'));
+  check('Play all: button says Pause, Next wind disabled', ptext('all-btn') === 'Pause' && p$('next-btn').disabled);
+  pclick(p$('all-btn'));
+  check('Pause: button back to Play all', ptext('all-btn') === 'Play all' && !p$('next-btn').disabled);
+  const at = pheader().match(/Wind (\d+)/)[1] * 1;
+  for (let i = at; i <= 8; i++) pclick(p$('next-btn'));
+  check('verdict: "Lost output: 0 of 8 turbines / Acceptable: none"',
+        pheader() === 'Lost output: 0 of 8 turbines / Acceptable: none', pheader());
+  check('0 lost with 8 winds is the best possible', ptext('status').startsWith('The best possible result.'), ptext('status'));
+  check('after the end: New game, wind buttons gone', ptext('reset-btn') === 'New game' && p$('next-btn').hidden && p$('all-btn').hidden);
+  check('end compass: every direction tappable', pcount('#compass .dir-group.tappable') === 8);
+  check('end legend: Shown now / Tap to look again', ptext('legend') === 'Shown nowTap to look again', ptext('legend'));
+  pclick(p$('dir-NE'));
+  check('review a direction: its wakes and status', pcount('#wakes .wake') === 8
+        && ptext('status') === 'Wind blows NE: no turbines hit.' && p$('dir-NE').querySelector('text').classList.contains('active'),
+        ptext('status'));
+  pclick(p$('dir-NE'));
+  check('tap it again to clear', pcount('#wakes .wake') === 0 && ptext('status').startsWith('The best possible result.'));
+  pcell(0, 0);
+  check('review a turbine never hit', ptext('status') === '(0,0) was never hit.' && pcount('#hit-borders .select-border') === 1,
+        ptext('status'));
+
+  lines.push('-- Play mode, 16 winds');
+  pclick(pd.querySelector('.set-btn[data-setting="16"]'));
+  check('switching to 16 starts a new game', pcount('#turbines .turbine-symbol') === 0 && pheader().startsWith('None placed yet'));
+  for (const [x, y] of [[3,3],[0,5],[5,6],[6,1],[1,0],[2,8],[8,4],[8,8]]) pcell(x, y);
+  pclick(p$('start-btn'));
+  check('16 winds in turn', pheader() === 'Wind 1 of 16 / Wind blows N', pheader());
+  const order = p.eval('play.dirs').join(' ');
+  check('16-wind order: round the compass, or the 8 main then the 8 added',
+        order === 'N NNE NE ENE E ESE SE SSE S SSW SW WSW W WNW NW NNW'
+        || order === 'N NE E SE S SW W NW NNE ENE ESE SSE SSW WSW WNW NNW', order);
+  const orders = new Set();
+  for (let i = 0; i < 40; i++) { orders.add(p.eval('playOrder().join(" ")')); }
+  check('both orders occur', orders.size === 2, orders.size);
+  const periwinkle = pd.querySelectorAll('#compass text.added').length;
+  check('periwinkle added directions only when the main winds go first',
+        order.startsWith('N NE') ? periwinkle === 8 && count4() : periwinkle === 0, order + ': ' + periwinkle);
+  for (let i = 0; i < 16; i++) pclick(p$('next-btn'));
+  check('verdict: 3 of 8 lost, acceptable half or fewer',
+        pheader() === 'Lost output: 3 of 8 turbines / Acceptable: half or fewer', pheader());
+  check('3 lost with 16 winds is the best possible', ptext('status').startsWith('The best possible result.'), ptext('status'));
+  check('3 turbines show lost output', pcount('#turbines .turbine-symbol.lost') === 3);
+  pcell(2, 8);
+  check('review a lost turbine: which winds hit it', ptext('status') === '(2,8) was hit by W.'
+        && p$('dir-W').querySelector('text').classList.contains('active') && pcount('#wakes .wake') === 1, ptext('status'));
+  check('board and compass never moved in Play', ptop() === top0 && ctop() === ctop0,
+        top0 + '/' + ctop0 + ' -> ' + ptop() + '/' + ctop());
+  pclick(p$('reset-btn'));
+  check('New game clears the board', pcount('#turbines .turbine-symbol') === 0 && pheader().startsWith('None placed yet'));
 
   lines.push('');
   lines.push((failed === 0 ? 'ALL PASSED' : 'FAILURES') + ': ' + passed + ' passed, ' + failed + ' failed');

@@ -54,6 +54,31 @@ h1 {
   line-height: 1.1;
 }
 
+/* Mode tabs above the title: Play | Learn */
+#mode-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 22px;
+  margin: 0 0 4px;
+}
+
+.mode-tab {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: #7a96aa;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  padding: 2px 2px 3px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.mode-tab.active { color: #e8f0f5; border-bottom-color: #f5e642; }
+.mode-tab:not(.active):hover { color: #c5d9e8; }
+.mode-tab:focus-visible { outline: 2px solid #f5e642; outline-offset: 2px; }
+
 #turn-line {
   margin-top: 4px;
   font-size: clamp(0.95rem, 3.9vw, 1.1rem);
@@ -191,6 +216,22 @@ main {
 }
 .turbine-tower, .turbine-blade { fill: #e8f0f5; }
 .turbine-hub { fill: #f5e642; }
+
+/* Play review: the turbine being looked at */
+.select-border {
+  fill: none;
+  stroke: #f5e642;
+  stroke-width: 4;
+  pointer-events: none;
+}
+
+#play-controls {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+#play-controls[hidden] { display: none; }
 /* Lost output: hit at least once (vermilion; the wake passes, the loss stays) */
 .turbine-symbol.lost .turbine-tower,
 .turbine-symbol.lost .turbine-blade { fill: #f0743c; }
@@ -456,6 +497,7 @@ footer { width: 100%; display: flex; justify-content: center; }
   text-transform: uppercase;
   color: #f5e642;
 }
+#htp-body h3 { font-size: 0.86rem; font-weight: 700; color: #e8f0f5; margin-top: 4px; }
 #htp-body p, #htp-body li { font-size: 0.84rem; line-height: 1.55; color: #c5d9e8; }
 #htp-body strong { color: #d8e6f0; font-weight: 600; }
 #htp-body ol { padding-left: 1.4em; display: flex; flex-direction: column; gap: 6px; }

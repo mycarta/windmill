@@ -53,6 +53,24 @@ look, not game code.
 | D18 | Repo `windmill`, default branch `main`. |
 | D19 | App icon: turbine B on `#1a2d3a`. |
 
+## Learn and Play modes (2026-11-22)
+
+Matteo's decisions after a Dandelions player cracked the 8-direction game and
+found that "Replay with 16 directions" could only be watched. The reasoning and
+the numbers are in [PLAY_PROPOSAL.md](PLAY_PROPOSAL.md).
+
+| # | Decision |
+|---|---|
+| Spec change | **Changes the spec's "no winner, no score".** Play has a verdict and an acceptable level of loss, a target for one game, not a win. No score is kept across games. |
+| D20 | Two modes, both public, switched by quiet text tabs above the title: **Play** and **Learn** (working names). Play opens first. |
+| D21 | **Learn** is the game as it was: D1, D6 and D7 hold there, and "Replay with 16 directions" stays. The private URL tools (`?wind=pick`, `?lines=knight`) work in Learn only. |
+| D22 | **Play: place all 8 turbines, then the winds blow** (8 or 16, the setting) over the finished layout, so the verdict judges the layout, not timing. Replaces D1 and D6 in Play. 9×9 board, 8 turbines in both settings. A placed turbine can be tapped to take it back until the wind starts. |
+| D23 | **Player-paced reveal:** one wind at a time, "Next wind", with "Play all" (1.5 s per wind) and "Pause". With 8 winds they go round the compass from N. With 16, each game picks at random between round the compass and the 8 main directions first, then the 8 added ones; in that second order the added directions are periwinkle and the legend matches the replay's. The order never changes the verdict. |
+| D24 | **Verdict:** "Lost output: X of 8 turbines" over "Acceptable: none" (8 winds) or "Acceptable: half or fewer" (16 winds). The status says "The best possible result." (0 lost with 8 winds, 3 with 16, the proven minimum), "Within the acceptable loss." or "More than the acceptable loss.". How to Play does not say what the best possible is, provisionally. |
+| D25 | **Review at the end,** as in chess apps: tap a direction to see that wind's wakes again, tap a turbine to see which winds hit it (gold outline, the wakes that hit it, those directions gold on the compass). Legend: "Shown now", "Tap to look again". Reset becomes "New game". |
+| D26 | Placing header: "None placed yet", "5 of 8 placed", "All 8 turbines placed", over "Place all 8, then the wind blows" or "Then 16 winds will blow". |
+| Open | Whether a clean 8-wind game should offer the 16-wind game; whether to show testers which wind order they had. Both wait for first players' feedback. |
+
 ## Scale
 
 The game does not show a cell size on screen, but one cell is taken to be

@@ -16,6 +16,10 @@
 
     <div id="app">
       <header>
+        <nav id="mode-tabs" role="tablist" aria-label="Mode">
+          <button class="mode-tab active" data-mode="play"  role="tab" aria-selected="true"  type="button">Play</button>
+          <button class="mode-tab"        data-mode="learn" role="tab" aria-selected="false" type="button">Learn</button>
+        </nav>
         <h1>Windmill</h1>
         <div id="turn-line"><span class="line">Turn 1 of 8</span><span class="line">&nbsp;</span></div>
         <div id="header-controls">
@@ -73,6 +77,12 @@
             <button id="close-btn" class="pill"         type="button">Close</button>
           </div>
 
+          <div id="play-controls">
+            <button id="start-btn" class="pill primary" type="button" disabled>Let the wind blow</button>
+            <button id="next-btn"  class="pill primary" type="button" hidden>Next wind</button>
+            <button id="all-btn"   class="pill"         type="button" hidden>Play all</button>
+          </div>
+
           <div id="legend" aria-hidden="true"></div>
 
           <p id="rule-line">In this game, the wind blows only in the 8 directions on the compass.</p>
@@ -105,6 +115,22 @@
 
         <p id="htp-rule">In this game, the wind blows only in the 8 directions on the compass.</p>
 
+        <h3>Play</h3>
+        <ol>
+          <li>Tap empty squares to place 8 turbines. Tap a turbine to take it back.</li>
+          <li>Tap <strong>Let the wind blow</strong>. Each wind blows over your layout in turn.
+              Tap <strong>Next wind</strong> to move on, or
+              <strong>Play all</strong> to watch them all.</li>
+          <li>Every turbine leaves a wake downwind, drawn as a pale streak.
+              A turbine inside another turbine's wake is hit. Its square gets a red border,
+              and the turbine changes colour because it has lost output.</li>
+          <li>At the end, count the turbines that lost output. With 8 winds, a layout can
+              keep them all. With 16 winds, losing half or fewer is acceptable.</li>
+          <li>Tap a direction on the compass to see that wind again, or tap a turbine to see
+              which winds hit it.</li>
+        </ol>
+
+        <h3>Learn</h3>
         <p>Each turn:</p>
         <ol>
           <li>Tap an empty square to place a turbine.</li>

@@ -1,7 +1,7 @@
 # Windmill: proposal for a play mode and a demonstration mode
 
-Draft for Matteo, 2026-11-22. Nothing here is built. Where it would change a
-rule in the spec or in [DECISIONS.md](DECISIONS.md), it says so.
+Draft for Matteo, 2026-11-22. Now built: what was decided is recorded in
+[DECISIONS.md](DECISIONS.md) (D20 to D26), which wins where the two differ.
 
 ## Why
 

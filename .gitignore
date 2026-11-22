@@ -2,3 +2,9 @@
 DECISION_LOG_windmill_*.md
 CC_PROMPT_windmill_*.md
 windmill_geometry_check.py
+
+# Design notes: kept on Matteo's machine, out of public view (they spoil the Play puzzle)
+DECISIONS.md
+PROPOSAL.md
+PLAY_PROPOSAL.md
+proposal/

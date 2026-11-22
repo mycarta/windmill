@@ -132,7 +132,9 @@ compass directions fade into the compass's own blue. In the replay, the 8 added
 directions are periwinkle, chosen with the hue templates of Cohen-Or et al.,
 [*Color Harmonization*](https://igl.ethz.ch/projects/color-harmonization/harmonization.pdf)
 (SIGGRAPH 2006): the blues sit in one sector of the hue wheel, and gold and red
-in the opposite one. The reasoning is in [DECISIONS.md](DECISIONS.md).
+in the opposite one. A turbine that has lost output turns vermilion, which stays
+clearly unlike the white turbines with every common kind of colour blindness;
+How to Play says only that it "changes colour".
 
 ## Tests
 
@@ -156,7 +158,6 @@ in the opposite one. The reasoning is in [DECISIONS.md](DECISIONS.md).
 | `generate-icons.html` | Draws the app icons |
 | `tests/` | Wake-rule tests and the UI smoke test |
 | `tools/scale_check.py` | The physical-scale check above |
-| `PROPOSAL.md`, `PLAY_PROPOSAL.md`, `DECISIONS.md`, `proposal/` | How the design was proposed and decided |
 
 **Updating the offline app:** whenever any cached file changes, bump `CACHE` in
 `sw.js` (`windmill-v1` → `windmill-v2` …). Otherwise phones that installed the

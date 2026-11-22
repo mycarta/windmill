@@ -8,3 +8,6 @@ DECISIONS.md
 PROPOSAL.md
 PLAY_PROPOSAL.md
 proposal/
+
+# Private notes folder: its own repo, backed up to a private GitHub repo
+notes/

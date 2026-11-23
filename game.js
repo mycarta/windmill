@@ -235,10 +235,22 @@ function drawBoard(view = {}) {
 function buildCompass(n) {
   const svg = $('compass');
   svg.innerHTML = '';
-  svg.setAttribute('class', n === 16 ? 'n16' : 'n8');
+  svg.setAttribute('class', n === 8 ? 'n8' : n === 16 ? 'n16' : 'n16 n32');
   svg.appendChild(svgEl('circle', { cx: 0, cy: 0, r: 100, class: 'compass-ring' }));
   svg.appendChild(svgEl('circle', { cx: 0, cy: 0, r: 4.5, class: 'compass-center' }));
-  for (const dir of directionsFor(n)) {
+  // 32 directions: the 16 between the named ones are unlabelled ticks on the ring
+  if (n === 32) {
+    for (const dir of DIRECTIONS_32.filter(d => !DIRECTIONS_16.includes(d))) {
+      const b = bearingOf(dir) * Math.PI / 180;
+      const g = svgEl('g', { id: `dir-${dir}`, class: 'dir-group' });
+      g.appendChild(svgEl('line', {
+        x1: (88 * Math.sin(b)).toFixed(2), y1: (-88 * Math.cos(b)).toFixed(2),
+        x2: (100 * Math.sin(b)).toFixed(2), y2: (-100 * Math.cos(b)).toFixed(2), class: 'dir-tick',
+      }));
+      svg.appendChild(g);
+    }
+  }
+  for (const dir of directionsFor(n === 32 ? 16 : n)) {
     const b = bearingOf(dir) * Math.PI / 180;
     const x = 82 * Math.sin(b), y = -82 * Math.cos(b);
     const g = svgEl('g', { id: `dir-${dir}`, class: 'dir-group' });
@@ -256,8 +268,8 @@ function paintCompass(state) {
   for (const g of $('compass').querySelectorAll('.dir-group')) {
     const dir = g.id.slice(4);
     const s = state(dir);
-    const text = g.querySelector('text');
-    text.setAttribute('class', ['dir-text', dir.length === 3 ? 'three' : '',
+    const mark = g.querySelector('text') || g.querySelector('line');
+    mark.setAttribute('class', [mark.tagName === 'line' ? 'dir-tick' : 'dir-text', dir.length === 3 ? 'three' : '',
       s.added ? 'added' : '', s.used ? 'used' : '', s.active ? 'active' : ''].filter(Boolean).join(' '));
     g.setAttribute('class', 'dir-group' + (s.tappable ? ' tappable' : ''));
   }
@@ -373,6 +385,7 @@ function renderGame(view = {}) {
 // ── Turns ────────────────────────────────────────────────────────────────────
 
 function handleCellClick(x, y) {
+  if (replay) return;
   if (mode === 'play') { playCellClick(x, y); return; }
   if (!canPlace()) return;
   if (turbines.some(t => t.x === x && t.y === y)) return;
@@ -396,6 +409,7 @@ function handleCellClick(x, y) {
 }
 
 function handleCompassClick(dir) {
+  if (replay) return;
   if (mode === 'play') { playCompassClick(dir); return; }
   if (replay || !PICK_MODE || !awaitingPick || usedDirs.includes(dir)) return;
   blow(dir);
@@ -604,24 +618,32 @@ function renderPlay(view = {}) {
   $('all-btn').hidden = play.phase !== 'reveal';
   $('all-btn').textContent = play.playing ? 'Pause' : 'Play all';
   $('next-btn').disabled = play.playing;
+  $('replay32-btn').hidden = !(play.phase === 'done' && setting === 16);
   $('reset-btn').textContent = play.phase === 'done' ? 'New game' : 'Reset';
   updateButtons();
 }
 
-// ── Replay with 16 directions ────────────────────────────────────────────────
+// ── Replays: Learn 8 → 16 directions, Play 16 → 32 directions ────────────────
+// The same static replay one step finer: every direction of the finer set
+// blows once, clockwise from N, over the turbines on the board.
 
 function openReplay() {
-  if (setting !== 8 || turbines.length < 2 || inputLocked || awaitingPick || replay) return;
+  if (replay) return;
+  const fine = mode === 'play';
+  if (fine && !(play.phase === 'done' && setting === 16)) return;
+  if (!fine && (setting !== 8 || turbines.length < 2 || inputLocked || awaitingPick)) return;
+  const base = fine ? DIRECTIONS_16 : DIRECTIONS_8;
+  const all  = fine ? DIRECTIONS_32 : DIRECTIONS_16;
 
   // The replay is its own experiment: every turbine starts with no lost
   // output and turns vermilion the first time a replay gust hits it.
   const frames = [];
   const lostSoFar = new Set();
-  for (const dir of DIRECTIONS_16) {
+  for (const dir of all) {
     const hits = hitsForGust(turbines, dir);
     hits.forEach(i => lostSoFar.add(i));
     const lost = new Set(lostSoFar);
-    const pairs = KNIGHT_LINES ? knightHitPairs(turbines, dir) : [];
+    const pairs = KNIGHT_LINES && !fine ? knightHitPairs(turbines, dir) : [];
     if (pairs.length === 0) frames.push({ dir, hits, lost, pair: null });
     else pairs.forEach(pair => frames.push({ dir, hits, lost, pair }));
   }
@@ -633,18 +655,20 @@ function openReplay() {
     playing: true,
     timer: null,
     saved: { status: $('status').textContent },
-    hit8: hitByAny(turbines, DIRECTIONS_8).length,
-    hit16: hitByAny(turbines, DIRECTIONS_16),
+    base, all,
+    title: `Replay with ${all.length} directions`,
+    hitBase: hitByAny(turbines, base).length,
+    hitAll: hitByAny(turbines, all),
   };
 
-  ['compass-caption', 'rule-line', 'record', 'game-buttons'].forEach(id => { $(id).hidden = true; });
+  ['compass-caption', 'rule-line', 'record', 'game-buttons', 'play-controls'].forEach(id => { $(id).hidden = true; });
   $('replay-controls').hidden = false;
   $('pause-btn').hidden = false;
   $('step-btn').hidden = false;
   setPauseLabel();
-  buildCompass(16);
-  renderLegend([[COLOR.now, 'Wind now'], [COLOR.pale, '8 directions'],
-                [COLOR.added, 'Added in 16 directions'], [COLOR.used, 'Used']]);
+  buildCompass(all.length);
+  renderLegend([[COLOR.now, 'Wind now'], [COLOR.pale, `${base.length} directions`],
+                [COLOR.added, `Added in ${all.length} directions`], [COLOR.used, 'Used']]);
   updateButtons();
   showFrame(0);
   scheduleReplay();
@@ -660,15 +684,16 @@ function showFrame(i) {
     replay.playing = false;
     clearTimeout(replay.timer);
     // No gust now, so no borders: only the colour of lost output.
-    drawBoard({ lost: new Set(replay.hit16) });
-    // The compass becomes a key for the two counts: the 8 directions pale,
-    // the added 8 periwinkle, none gold (no gust is blowing).
-    paintCompass(dir => ({ active: false, used: false, added: !DIRECTIONS_8.includes(dir), tappable: false }));
-    renderLegend([[COLOR.pale, '8 directions'], [COLOR.added, 'Added in 16 directions']]);
-    setTurnLine('Replay with 16 directions', '');
-    setStatus('');
-    setSummary('summary-8',  'Hit by at least one of the 8 directions:',  `${replay.hit8} of ${n} turbines`);
-    setSummary('summary-16', 'Hit by at least one of the 16 directions:', `${replay.hit16.length} of ${n} turbines`);
+    const { base, all } = replay;
+    drawBoard({ lost: new Set(replay.hitAll) });
+    // The compass becomes a key for the two counts: the base directions pale,
+    // the added ones periwinkle, none gold (no gust is blowing).
+    paintCompass(dir => ({ active: false, used: false, added: !base.includes(dir), tappable: false }));
+    renderLegend([[COLOR.pale, `${base.length} directions`], [COLOR.added, `Added in ${all.length} directions`]]);
+    setTurnLine(replay.title, '');
+    setStatus(all.length === 32 ? 'Finer wind finds gaps between the 16 directions.' : '');
+    setSummary('summary-8',  `Hit by at least one of the ${base.length} directions:`, `${replay.hitBase} of ${n} turbines`);
+    setSummary('summary-16', `Hit by at least one of the ${all.length} directions:`, `${replay.hitAll.length} of ${n} turbines`);
     $('replay-summary').hidden = false;
     $('pause-btn').hidden = true;
     $('step-btn').hidden = true;
@@ -677,13 +702,17 @@ function showFrame(i) {
 
   const newGust = !prev || prev.dir !== f.dir;
   drawBoard({ gust: f.dir, hits: f.hits, lost: f.lost, pair: f.pair, freshGust: newGust, freshLine: true });
-  const k = DIRECTIONS_16.indexOf(f.dir);
+  const { base, all } = replay;
+  const k = all.indexOf(f.dir);
   paintCompass(dir => {
-    const added = !DIRECTIONS_8.includes(dir);
+    const added = !base.includes(dir);
     const active = dir === f.dir;
-    return { active, used: !active && DIRECTIONS_16.indexOf(dir) < k, added, tappable: false };
+    return { active, used: !active && all.indexOf(dir) < k, added, tappable: false };
   });
-  setTurnLine('Replay with 16 directions', `Wind blows ${f.dir} · ${k + 1} of 16`);
+  // The 16 unlabelled directions of 32 are named by their neighbours
+  const wind = DIRECTIONS_16.includes(f.dir) ? `Wind blows ${f.dir}`
+    : `Between ${all[k - 1]} and ${all[(k + 1) % all.length]}`;
+  setTurnLine(replay.title, `${wind} · ${k + 1} of ${all.length}`);
   setStatus(hitText(f.hits.length));
 }
 
@@ -737,6 +766,7 @@ function closeReplay() {
   ['replay-controls', 'replay-summary'].forEach(id => { $(id).hidden = true; });
   ['compass-caption', 'rule-line', 'record', 'game-buttons'].forEach(id => { $(id).hidden = false; });
   buildCompass(setting);
+  if (mode === 'play') { $('play-controls').hidden = false; renderPlay(); return; }
   renderGame();
   setTurnLine(...turnLine());
   setStatus(saved.status);
@@ -756,6 +786,7 @@ document.addEventListener('DOMContentLoaded', () => {
     btn.addEventListener('click', () => chooseMode(btn.dataset.mode));
   });
   $('replay-btn').addEventListener('click', openReplay);
+  $('replay32-btn').addEventListener('click', openReplay);
   $('pause-btn').addEventListener('click', togglePause);
   $('step-btn').addEventListener('click', stepReplay);
   $('close-btn').addEventListener('click', closeReplay);

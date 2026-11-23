@@ -287,6 +287,10 @@ main {
 .dir-text.used        { fill: #1f3c51; }   /* switched off: the compass's own blue */
 .dir-text.added       { fill: #94a0f0; }   /* replay: the 8 added directions (periwinkle) */
 .dir-text.added.used  { fill: #282f5d; }
+/* Play's 32-direction replay: the 16 in-between directions as ticks on the ring */
+.dir-tick              { stroke: #94a0f0; stroke-width: 2.5; stroke-linecap: round; }
+.dir-tick.used         { stroke: #282f5d; }
+.dir-tick.active       { stroke: #f5e642; stroke-width: 4.5; }
 .dir-text.active      { fill: #f5e642; font-weight: 700; font-size: 14px; }
 #compass.n16 .dir-text.active       { font-size: 13px; }
 #compass.n16 .dir-text.three.active { font-size: 11px; }

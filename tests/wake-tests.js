@@ -148,6 +148,25 @@ check('just beyond WAKE_HALF_WIDTH is not hit',             !isHit(t(0, 0), t(0.
         bad.length === 0, bad.join(' '));
 })();
 
+// ── 32 directions (Play's replay) ────────────────────────────────────────────
+
+wtLog('-- 32 directions');
+check('32 directions: the 16 plus one between each pair, every 11.25 degrees',
+      DIRECTIONS_32.length === 32 && DIRECTIONS_32.filter(function (_, i) { return i % 2 === 0; }).join(' ') === directionsFor(16).join(' ')
+      && bearingOf('NbE') === 11.25 && bearingOf('NbW') === 348.75);
+(function () {
+  // The 7-turbine tilted grid: no wind of 16 hits it; finer wind hits all 7.
+  const grid = [t(3,3), t(0,5), t(5,6), t(6,1), t(1,0), t(2,8), t(8,4)];
+  const at16 = hitByAny(grid, DIRECTIONS_16).length, at32 = hitByAny(grid, DIRECTIONS_32).length;
+  check('tilted grid of 7: 0 lost at 16 directions, 7 at 32', at16 === 0 && at32 === 7, at16 + ', ' + at32);
+  // Best possible with both 8 and 16 winds (0 and 3 lost): 8 of 8 at 32.
+  const both = [t(0,0), t(0,8), t(1,5), t(2,7), t(3,2), t(6,4), t(7,8), t(8,1)];
+  const b8 = hitByAny(both, DIRECTIONS_8).length, b16 = hitByAny(both, DIRECTIONS_16).length,
+        b32 = hitByAny(both, DIRECTIONS_32).length;
+  check('layout best for 8 and 16: 0, 3, then 8 of 8 at 32', b8 === 0 && b16 === 3 && b32 === 8,
+        b8 + ', ' + b16 + ', ' + b32);
+})();
+
 check('no turbines, no hits', hitsForGust([], 'N').length === 0 && hitByAny([], directionsFor(16)).length === 0);
 check('one turbine, no hits', hitsForGust([t(4, 4)], 'N').length === 0);
 

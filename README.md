@@ -42,6 +42,11 @@ With 16 winds, each game blows the winds either round the compass from N, or the
 8 main directions first and then the 8 added ones (shown in periwinkle). The
 order never changes the result.
 
+After a game with 16 winds, **Replay with 32 directions** blows 32 directions
+over the finished layout, the same static replay as Learn's, one step finer.
+The 16 directions between the named ones show as ticks on the compass. At the
+end it compares the turbines hit with 16 directions and with 32.
+
 ### Learn
 
 1. Tap an empty square to place a turbine.

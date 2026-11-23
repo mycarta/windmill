@@ -15,8 +15,14 @@ const WAKE_HALF_WIDTH = 0.5;   // cells, each side of the wind line through a tu
 const WAKE_LENGTH     = 6;     // cells, downwind of a turbine
 const WAKE_EPS        = 1e-9;  // tolerance so exact lines and exact lengths count
 
-const DIRECTIONS_16 = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE',
-                       'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+// 32 directions only for Play's "Replay with 32 directions". The 16 between
+// the named ones carry the traditional "by" names internally (NbE = north by
+// east); the screen shows them as unlabelled ticks.
+const DIRECTIONS_32 = ['N', 'NbE', 'NNE', 'NEbN', 'NE', 'NEbE', 'ENE', 'EbN',
+                       'E', 'EbS', 'ESE', 'SEbE', 'SE', 'SEbS', 'SSE', 'SbE',
+                       'S', 'SbW', 'SSW', 'SWbS', 'SW', 'SWbW', 'WSW', 'WbS',
+                       'W', 'WbN', 'WNW', 'NWbW', 'NW', 'NWbN', 'NNW', 'NbW'];
+const DIRECTIONS_16 = DIRECTIONS_32.filter((_, i) => i % 2 === 0);
 const DIRECTIONS_8  = DIRECTIONS_16.filter((_, i) => i % 2 === 0);
 
 // The directions of a setting (8 or 16), clockwise from N.
@@ -26,9 +32,9 @@ function directionsFor(setting) {
 
 // Compass bearing in degrees, 0 = N, clockwise.
 function bearingOf(dir) {
-  const i = DIRECTIONS_16.indexOf(dir);
+  const i = DIRECTIONS_32.indexOf(dir);
   if (i < 0) throw new Error('Unknown direction: ' + dir);
-  return i * 22.5;
+  return i * 11.25;
 }
 
 // Downwind unit vector (east, north) for a wind blowing toward dir.

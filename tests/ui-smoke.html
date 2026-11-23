@@ -323,8 +323,44 @@ async function run() {
         && p$('dir-W').querySelector('text').classList.contains('active') && pcount('#wakes .wake') === 1, ptext('status'));
   check('board and compass never moved in Play', ptop() === top0 && ctop() === ctop0,
         top0 + '/' + ctop0 + ' -> ' + ptop() + '/' + ctop());
+  check('16-wind verdict offers the 32-direction replay', !p$('replay32-btn').hidden);
   pclick(p$('reset-btn'));
   check('New game clears the board', pcount('#turbines .turbine-symbol') === 0 && pheader().startsWith('None placed yet'));
+  check('no 32-direction replay before the end', p$('replay32-btn').hidden);
+
+  lines.push('-- Play: replay with 32 directions');
+  // Best possible with both 8 and 16 winds (0 and 3 lost): finer wind takes all 8
+  for (const [x, y] of [[0,0],[0,8],[1,5],[2,7],[3,2],[6,4],[7,8],[8,1]]) pcell(x, y);
+  pclick(p$('start-btn'));
+  for (let i = 0; i < 16; i++) pclick(p$('next-btn'));
+  check('this layout: 3 lost with 16 winds, the best possible', pheader().startsWith('Lost output: 3 of 8')
+        && ptext('status').startsWith('The best possible result.'), pheader());
+  const rtop = ptop(), rctop = ctop();
+  pclick(p$('replay32-btn'));
+  if (p$('pause-btn').textContent === 'Pause') pclick(p$('pause-btn'));   // step by hand
+  check('compass: 16 labels and 16 unlabelled ticks', pcount('#compass .dir-text') === 16 && pcount('#compass .dir-tick') === 16);
+  check('replay header starts at N', pheader() === 'Replay with 32 directions / Wind blows N · 1 of 32', pheader());
+  check('replay legend: 16 directions, added in 32', ptext('legend').includes('16 directions') && ptext('legend').includes('Added in 32 directions'));
+  check('verdict controls hidden during the replay', p$('play-controls').hidden && p$('game-buttons').hidden);
+  pclick(p$('step-btn'));
+  check('an in-between wind is named by its neighbours', pheader() === 'Replay with 32 directions / Between N and NNE · 2 of 32', pheader());
+  check('its tick is gold', p$('dir-NbE').querySelector('line').classList.contains('active'));
+  pcell(4, 4);
+  check('no turbine placed or selected during the replay', pcount('#turbines .turbine-symbol') === 8 && pcount('#hit-borders .select-border') === 0);
+  for (let i = 0; i < 40; i++) if (!p$('step-btn').hidden) pclick(p$('step-btn'));
+  check('end: 3 of 8 for the 16 directions', ptext('summary-8') === 'Hit by at least one of the 16 directions: 3 of 8 turbines', ptext('summary-8'));
+  check('end: 8 of 8 for the 32 directions', ptext('summary-16') === 'Hit by at least one of the 32 directions: 8 of 8 turbines', ptext('summary-16'));
+  check('end: status line', ptext('status') === 'Finer wind finds gaps between the 16 directions.', ptext('status'));
+  check('end: compass lit as a key, 16 ticks periwinkle', pd.querySelectorAll('#compass .dir-tick.added:not(.used):not(.active)').length === 16);
+  check('board and compass never moved in the replay', ptop() === rtop && ctop() === rctop, rtop + ' -> ' + ptop());
+  pclick(p$('close-btn'));
+  check('Close: back to the verdict, unchanged', pheader().startsWith('Lost output: 3 of 8') && pcount('#compass .dir-group') === 16
+        && !p$('replay32-btn').hidden && !p$('play-controls').hidden && pcount('#turbines .turbine-symbol.lost') === 3);
+  pclick(pd.querySelector('.set-btn[data-setting="8"]'));
+  for (const [x, y] of [[0,0],[1,4],[2,7],[3,5],[4,2],[5,6],[6,1],[7,3]]) pcell(x, y);
+  pclick(p$('start-btn'));
+  for (let i = 0; i < 8; i++) pclick(p$('next-btn'));
+  check('no 32-direction replay after an 8-wind game', p$('replay32-btn').hidden);
 
   lines.push('');
   lines.push((failed === 0 ? 'ALL PASSED' : 'FAILURES') + ': ' + passed + ' passed, ' + failed + ' failed');

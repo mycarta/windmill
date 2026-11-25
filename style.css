@@ -543,13 +543,14 @@ footer { width: 100%; display: flex; justify-content: center; }
   }
 }
 
-/* ── Short screens (e.g. iPhone SE 375×667) ───────────────────────────────── */
+/* ── Phones up to 900px tall (iPhone SE to iPhone 13/14): board and whole
+   compass on one screen, also in the Home Screen app under the status bar ── */
 
-@media (max-height: 700px) and (max-width: 759px) {
+@media (max-height: 900px) and (max-width: 759px) {
   body { padding-top: 8px; padding-bottom: 8px; }
   #app, main { gap: 9px; }
   h1 { font-size: clamp(1.3rem, 6vw, 1.8rem); }
   #header-controls { margin-top: 6px; }
   #grid { max-width: 330px; }
-  #compass-wrap { max-width: 180px; }
+  #compass-wrap { max-width: 170px; }
 }

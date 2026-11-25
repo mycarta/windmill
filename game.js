@@ -18,7 +18,6 @@ const KNIGHT_LINES = PARAMS.get('lines') === 'knight';
 const GUST_DELAY_MS   = 500;    // pause between placing a turbine and the gust
 const REPLAY_FRAME_MS = 1200;   // each replay frame (a gust, or one L within it)
 const PLAY_ALL_MS     = 1500;   // Play mode: each wind, when "Play all" runs
-const PLAY_TURBINES   = 8;      // Play mode: turbines to place, with 8 or 16 winds
 const CELL = 100;               // board units per cell
 const BOARD_N = 9;
 
@@ -301,7 +300,7 @@ function renderLegend(items) {
 // ── Game rendering ───────────────────────────────────────────────────────────
 
 function canPlace() {
-  if (mode === 'play') return play.phase === 'place' && turbines.length < PLAY_TURBINES;
+  if (mode === 'play') return play.phase === 'place' && turbines.length < playTurbines();
   return !replay && !gameOver && !inputLocked && !awaitingPick && turbines.length < setting;
 }
 
@@ -487,16 +486,20 @@ function playOrder() {
   return [...DIRECTIONS_8, ...DIRECTIONS_16.filter(d => !DIRECTIONS_8.includes(d))];
 }
 
-function playAcceptable() { return setting === 8 ? 0 : Math.floor(PLAY_TURBINES / 2); }
-// Fewest turbines any layout of 8 can lose on 9×9: 8 winds can always be
-// survived; with 16 winds, 3 is the best possible (checked exhaustively).
-function playBest() { return setting === 8 ? 0 : 3; }
+// Turbines to place in Play: 8 with 8 winds, 6 with 16. On 9×9 both counts
+// can come through with no turbine hit, in many different layouts (with 16
+// winds, 137 shapes of 6; 7 would leave a single shape, 8 cannot be clean).
+// Finer wind, fewer turbines on the same site: the drop is left for players
+// to notice.
+function playTurbines() { return setting === 8 ? 8 : 6; }
+function playAcceptable() { return 0; }
+function playBest() { return 0; }
 
 function playCellClick(x, y) {
   const i = turbines.findIndex(t => t.x === x && t.y === y);
   if (play.phase === 'place') {
     if (i >= 0) turbines.splice(i, 1);                       // tap a turbine to remove it
-    else if (turbines.length < PLAY_TURBINES) turbines.push({ x, y, rot: Math.round(Math.random() * 80 - 40) });
+    else if (turbines.length < playTurbines()) turbines.push({ x, y, rot: Math.round(Math.random() * 80 - 40) });
     else return;
     renderPlay(i >= 0 ? {} : { freshTurbine: turbines.length - 1 });
   } else if (play.phase === 'done') {
@@ -512,7 +515,7 @@ function playCompassClick(dir) {
 }
 
 function startWind() {
-  if (play.phase !== 'place' || turbines.length < PLAY_TURBINES) return;
+  if (play.phase !== 'place' || turbines.length < playTurbines()) return;
   play.phase = 'reveal';
   record = [];
   nextWind();
@@ -557,11 +560,12 @@ function renderPlay(view = {}) {
   const k = play.index;
 
   if (play.phase === 'place') {
-    line1 = n === 0 ? 'None placed yet' : n < PLAY_TURBINES ? `${n} of ${PLAY_TURBINES} placed` : `All ${PLAY_TURBINES} turbines placed`;
-    line2 = n < PLAY_TURBINES ? `Place all ${PLAY_TURBINES}, then the wind blows` : `Then ${setting} winds will blow`;
+    const T = playTurbines();
+    line1 = `Place ${T} turbines`;
+    line2 = `Then ${setting} winds blow`;
     status = n === 0 ? 'Tap a square to place a turbine.'
-      : n < PLAY_TURBINES ? 'Tap a square to place a turbine, or a turbine to remove it.'
-      : 'Tap a turbine to move it, or let the wind blow.';
+      : n < T ? `${n} of ${T} placed. Tap a turbine to remove it.`
+      : `All ${T} placed. Tap a turbine to move it, or let the wind blow.`;
   } else if (play.phase === 'reveal') {
     const dir = dirs[k];
     const hits = record[k].hit.map(h => turbines.indexOf(h));
@@ -572,7 +576,7 @@ function renderPlay(view = {}) {
   } else {
     const lostN = play.lost.size, ok = lostN <= playAcceptable(), best = lostN <= playBest();
     line1 = `Lost output: ${lostN} of ${n} turbines`;
-    line2 = setting === 8 ? 'Acceptable: none' : 'Acceptable: half or fewer';
+    line2 = 'Acceptable: none';
     status = (best ? 'The best possible result. ' : ok ? 'Within the acceptable loss. ' : 'More than the acceptable loss. ') +
              'Tap a direction or a turbine to look again.';
     const r = play.review;
@@ -613,7 +617,7 @@ function renderPlay(view = {}) {
   setStatus(status);
 
   $('start-btn').hidden = play.phase !== 'place';
-  $('start-btn').disabled = n < PLAY_TURBINES;
+  $('start-btn').disabled = n < playTurbines();
   $('next-btn').hidden = play.phase !== 'reveal';
   $('all-btn').hidden = play.phase !== 'reveal';
   $('all-btn').textContent = play.playing ? 'Pause' : 'Play all';

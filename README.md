@@ -3,9 +3,9 @@
 A free, offline, no-ads browser game about wind turbines and their wakes, and a
 companion to [Dandelions](https://mycarta.github.io/Dandelions/).
 
-It has two modes. **Play** is a puzzle: place 8 turbines on a 9×9 board, then
-the wind blows from every direction on the compass, one at a time, and you see
-how many turbines lost output. **Learn** shows wakes one gust at a time: after
+It has two modes. **Play** is a puzzle: place turbines on a 9×9 board (8 with 8
+winds, 6 with 16), then the wind blows from every direction on the compass, one
+at a time, and you see how many turbines lost output. **Learn** shows wakes one gust at a time: after
 each turbine, the wind blows in one direction, and you see which placements get
 hit when the wind can blow in **8 directions**, and which when it can blow in
 **16**.
@@ -28,13 +28,14 @@ not a claim about real wind.
 
 ### Play
 
-1. Tap empty squares to place 8 turbines. Tap a turbine to take it back.
+1. Tap empty squares to place your turbines: 8 with 8 winds, 6 with 16. Tap a
+   turbine to take it back.
 2. Tap **Let the wind blow**. Each wind blows over your layout in turn. Tap
    **Next wind** to move on, or **Play all** to watch them all.
 3. Every turbine casts a wake (the pale streaks), and any turbine inside a
    wake gets a red border and changes colour: it has lost output.
-4. At the end, count the turbines that lost output. With 8 winds, a layout can
-   keep them all. With 16 winds, losing half or fewer is acceptable.
+4. At the end, count the turbines that lost output. The aim is none, and in
+   both settings a layout can keep them all.
 5. Tap a direction on the compass to see that wind again, or tap a turbine to
    see which winds hit it.
 
